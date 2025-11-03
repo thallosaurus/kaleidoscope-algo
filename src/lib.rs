@@ -15,6 +15,11 @@ pub mod shader;
 
 static BLEND_FILE: &[u8] = include_bytes!("../kaleido.blend");
 static PYTHON_LOADER: &[u8] = include_bytes!("../loader.py");
+#[cfg(target_os = "macos")]
+static BLENDER_PATH: &str = "/Applications/Blender.app/Contents/MacOS/Blender";
+
+#[cfg(target_os = "linux")]
+static BLENDER_PATH: &str = "blender";
 
 fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> {
     let blend_tmp = Rc::new(RefCell::new(NamedTempFile::new()?));
@@ -28,7 +33,7 @@ fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> 
 
 pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
     let encoded = BASE64_STANDARD.encode(args.json().to_string());
-    let blender_exec_path = var("BLENDER").unwrap_or(String::from("blender"));
+    //let blender_exec_path = ").unwrap_or(String::from("blender"));
 
     let project_file = extract_static_file(BLEND_FILE)?;
     let project_borrow = project_file.borrow_mut();
@@ -38,7 +43,7 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
     let loader_borrow = loader_file.borrow_mut();
     let loader_path = loader_borrow.path();
 
-    let child = match Command::new(blender_exec_path)
+    let child = match Command::new(BLENDER_PATH)
         //.arg("kaleido.blend")
         .arg(project_path.as_os_str())
         .arg("--factory-startup")
