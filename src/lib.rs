@@ -75,7 +75,7 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
 }
 
 pub fn stitch_video(kargs: &KaleidoArgs) -> std::io::Result<()> {
-    println!("Stitching Video")
+    println!("Stitching Video");
     let status = Command::new("ffmpeg")
         .args([
             "-framerate",
