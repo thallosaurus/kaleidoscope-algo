@@ -104,7 +104,7 @@ impl TextureSelector {
         // 5 = without uNoise
         // 6 = with uNoise
         // 7 = with Textured
-        let r = random_range(0..=5);
+        let r = random_range(0..=4);
         Self::from(r)
     }
 
