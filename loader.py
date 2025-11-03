@@ -4,7 +4,7 @@ import bpy
 import base64
 import json
 
-
+bpy.app.debug_wm = True
 
 def decode_input_data(data):
     base64_bytes = data.encode("ascii")
@@ -12,20 +12,21 @@ def decode_input_data(data):
     sample_string = sample_string_bytes.decode("ascii")
     return json.loads(sample_string)
 
-def set_property(key, obj):
-    bpy.data.objects["Plane"][key] = obj[key]
+def set_property(key, value):
+    print("Setting " + key + " to " + str(value))
+    bpy.data.objects["Plane"][key] = value
 
 
 def init(scene):
     data = decode_input_data(sys.argv[-1])
-    print(data)
-    set_property("index", data)
-    set_property("scaling", data)
-    set_property("rotation", data)
-    set_property("scaling", data)
+    set_property("texture_index", data["texture_index"])
+    set_property("repetition", data["repetition"])
+    set_property("scaling", data["scaling"])
+    set_property("rotation", data["rotation"])
+    set_property("pingpong", data["pingpong"])
     
     for key in data["texture"].keys():
-        set_property(key, data["texture"])
+        set_property(key, data["texture"][key])
     
 def post_render(scene):
     print("post render")    

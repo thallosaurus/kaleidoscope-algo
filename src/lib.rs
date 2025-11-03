@@ -1,23 +1,25 @@
-use std::{env::{self, var}, process::Command};
+use std::{
+    env::var,
+    io::Error,
+    process::{Child, Command},
+};
 
-use clap::Parser;
 use base64::{Engine, prelude::BASE64_STANDARD};
 
-use crate::cli::CliArgs;
+use crate::shader::KaleidoArgs;
 
-mod cli;
+pub mod shader;
 
-fn main() {
-    let args = CliArgs::parse();
-    println!("{}", args.get_json());
-
+pub fn run_kaleidoscope(args: KaleidoArgs) -> Child {
     let encoded = BASE64_STANDARD.encode(args.get_json().to_string());
     println!("{}", encoded);
 
     let blender_exec_path = var("BLENDER").unwrap_or(String::from("blender"));
 
-    let cmd = Command::new(blender_exec_path)
+    match Command::new(blender_exec_path)
         .arg("-b")
+        .arg("--log-level")
+        .arg("-1")
         .arg("kaleido.blend")
         .arg("-o")
         .arg("//frame_####")
@@ -28,8 +30,8 @@ fn main() {
         .arg("0")
         .arg("--")
         .arg(encoded)
-        .spawn()
-        .expect("should be executable");
-    cmd.wait_with_output().unwrap();
-    // blender -b kaleido.blend -o "//output/frame_####" -Y -P loader.py -f 0 -- 'aaa aaaaaaaa'
+        .spawn() {
+            Ok(child) => child,
+            Err(err) => panic!("{}", err),
+        }
 }
