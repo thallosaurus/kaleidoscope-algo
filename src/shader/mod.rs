@@ -67,7 +67,7 @@ struct PolarArgs {
 impl PolarArgs {
     pub fn random() -> Self {
         Self {
-            repetition: random_range(3..=16),
+            repetition: random_range(3..=12),
             scaling: random_range(2.5..=12.0),
             rotation: random_range(0.0..=360.0),
             pingpong: random_range(0.5..=4.5),
@@ -152,6 +152,8 @@ impl From<u8> for TextureSelector {
 struct CompositeArgs {
     lens_distortion: f32,
     lens_dispersion: f32,
+    hue: f32,
+    saturation: f32
 }
 
 impl CompositeArgs {
@@ -159,12 +161,17 @@ impl CompositeArgs {
         Self {
             lens_distortion: random_range(-1.0..=-0.5),
             lens_dispersion: random_range(-1.0..=-0.5),
+            hue: random_range(0.0..=1.0),
+            saturation: random_range(1.0..=2.0),
+            
         }
     }
     fn json(&self) -> Value {
         json!({
             "composite_lens_distortion": -0.1,//self.lens_distortion,
-            "composite_lens_dispersion": -0.3 //self.lens_dispersion
+            "composite_lens_dispersion": -0.3, //self.lens_dispersion
+            "composite_hue": self.hue,
+            "composite_saturation": self.saturation
         })
     }
 }

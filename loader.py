@@ -10,7 +10,9 @@ def decode_input_data(data):
     base64_bytes = data.encode("ascii")
     sample_string_bytes = base64.b64decode(base64_bytes)
     sample_string = sample_string_bytes.decode("ascii")
-    return json.loads(sample_string)
+    j = json.loads(sample_string)
+    print(j)
+    return j
 
 def set_property(key, value):
     print("Setting " + key + " to " + str(value))

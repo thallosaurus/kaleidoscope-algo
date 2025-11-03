@@ -1,3 +1,4 @@
 /target
 *.blend1
-*.png
+output/*.png
+output/*.json

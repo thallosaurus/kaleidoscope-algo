@@ -1,3 +1,8 @@
+use std::{
+    fs::File,
+    io::{Error, Write},
+};
+
 use clap::Parser;
 use clap_derive::{Parser, Subcommand};
 use kaleidosynth::{run_kaleidoscope, shader::KaleidoArgs};
@@ -17,17 +22,24 @@ enum CliModes {
     Random,
 
     /// Create a parameterized kaleidoscope
-    Custom(KaleidoArgs)
+    Custom(KaleidoArgs),
 }
 
-
-fn main() {
+fn main() -> Result<(), Error> {
     let args = CliArgs::parse();
 
-    let (id, cmd) = match args.mode {
-        CliModes::Random => run_kaleidoscope(KaleidoArgs::random()),
-        CliModes::Custom(kaleido_args) => run_kaleidoscope(kaleido_args),
+    let kargs = match args.mode {
+        CliModes::Random => KaleidoArgs::random(),
+        CliModes::Custom(kaleido_args) => kaleido_args,
     };
 
+    let (id, cmd) = run_kaleidoscope(&kargs);
+
     cmd.wait_with_output().unwrap();
+
+    let json = serde_json::to_string(&kargs.json()).unwrap();
+
+    let mut file = File::create(format!("output/{}.json", id))?;
+    file.write_all(json.as_bytes())?;
+    Ok(())
 }

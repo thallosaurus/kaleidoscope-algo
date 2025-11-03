@@ -10,9 +10,9 @@ use crate::shader::KaleidoArgs;
 
 pub mod shader;
 
-pub fn run_kaleidoscope(args: KaleidoArgs) -> (Uuid, Child) {
+pub fn run_kaleidoscope(args: &KaleidoArgs) -> (Uuid, Child) {
     let encoded = BASE64_STANDARD.encode(args.json().to_string());
-    println!("{}", encoded);
+    //println!("{}", encoded);
 
     let blender_exec_path = var("BLENDER").unwrap_or(String::from("blender"));
 
