@@ -5,7 +5,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 
 use crate::shader::{
-    gabor::GaborArgs, magic::MagicArgs, noise::NoiseArgs, voronoi::VoronoiArgs, wave::WaveArgs,
+    gabor::GaborArgs, magic::MagicArgs, noise::NoiseArgs, unoise::UnoiseArgs, voronoi::VoronoiArgs, wave::WaveArgs
 };
 
 mod gabor;
@@ -13,6 +13,7 @@ mod magic;
 mod noise;
 mod voronoi;
 mod wave;
+mod unoise;
 
 #[derive(Debug, Parser, Clone, Serialize)]
 pub struct KaleidoArgs {
@@ -104,7 +105,7 @@ impl TextureSelector {
         // 5 = without uNoise
         // 6 = with uNoise
         // 7 = with Textured
-        let r = random_range(0..=4);
+        let r = random_range(0..=5);
         Self::from(r)
     }
 
@@ -173,19 +174,6 @@ impl CompositeArgs {
             "composite_hue": self.hue,
             "composite_saturation": self.saturation
         })
-    }
-}
-
-#[derive(Parser, Debug, Clone, Serialize)]
-struct UnoiseArgs {}
-
-impl UnoiseArgs {
-    pub fn random() -> Self {
-        Self {}
-    }
-
-    pub fn json(&self) -> Value {
-        json!({})
     }
 }
 
