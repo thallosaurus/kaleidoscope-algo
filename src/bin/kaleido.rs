@@ -5,7 +5,7 @@ use std::{
 
 use clap::Parser;
 use clap_derive::{Parser, Subcommand};
-use kaleidosynth::{run_kaleidoscope, shader::KaleidoArgs};
+use kaleidosynth::{run_kaleidoscope, shader::KaleidoArgs, stitch_video};
 use serde::Serialize;
 
 /// Program to generate Kaleidoscopes using blender as a backend
@@ -41,5 +41,7 @@ fn main() -> Result<(), Error> {
 
     let mut file = File::create(format!("output/{}.json", kargs.get_id()))?;
     file.write_all(json.as_bytes())?;
+
+    stitch_video(&kargs).unwrap();
     Ok(())
 }

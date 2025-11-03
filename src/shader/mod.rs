@@ -36,7 +36,10 @@ pub struct KaleidoArgs {
     id: String,
 
     #[arg(short)]
-    output_dir: Option<String>
+    output_dir: Option<String>,
+
+    #[arg(short, long)]
+    animate: bool
 }
 
 impl KaleidoArgs {
@@ -47,7 +50,8 @@ impl KaleidoArgs {
             composite: CompositeArgs::random(),
             frames: FrameArgs::default(),
             id: Uuid::new_v4().to_string(),
-            output_dir: None
+            output_dir: None,
+            animate: false
         }
     }
 

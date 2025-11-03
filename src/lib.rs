@@ -12,11 +12,7 @@ pub mod shader;
 
 pub fn run_kaleidoscope(args: &KaleidoArgs) -> Child {
     let encoded = BASE64_STANDARD.encode(args.json().to_string());
-    //println!("{}", encoded);
-
     let blender_exec_path = var("BLENDER").unwrap_or(String::from("blender"));
-
-    //let output_filename = Uuid::new_v4();
 
     let child = match Command::new(blender_exec_path)
         .arg("kaleido.blend")
@@ -47,4 +43,24 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> Child {
     };
 
     child
+}
+
+pub fn stitch_video(kargs: &KaleidoArgs) -> std::io::Result<()> {
+    let status = Command::new("ffmpeg")
+        .args([
+            "-framerate", "60",
+            "-i", format!("{}/{}_%05d.png", kargs.get_output_dir(), kargs.get_id()).as_str(),
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            format!("{}/{}.mp4", kargs.get_output_dir(), kargs.get_id()).as_str(),
+        ])
+        .status()?;
+
+    if status.success() {
+        println!("video stitch sucessful");
+    } else {
+        eprintln!("error while stitching video");
+    }
+
+    Ok(())
 }
