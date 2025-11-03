@@ -1,10 +1,5 @@
 use std::{
-    cell::RefCell,
-    env::{self, var},
-    io::{self, BufWriter, Write},
-    process::{Child, Command, ExitStatus},
-    rc::Rc,
-    sync::Arc,
+    cell::RefCell, fs::{File, create_dir}, io::{self, BufWriter, Write}, process::{Command, ExitStatus}, rc::Rc
 };
 
 use base64::{Engine, prelude::BASE64_STANDARD};
@@ -43,6 +38,8 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
     let loader_borrow = loader_file.borrow_mut();
     let loader_path = loader_borrow.path();
 
+    create_dir(format!("{}/{}",args.get_output_dir(),args.get_id()))?;
+
     let child = match Command::new(BLENDER_PATH)
         //.arg("kaleido.blend")
         .arg(project_path.as_os_str())
@@ -51,9 +48,9 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
         .arg("-1")
         .arg("--log-file")
         .arg(format!(
-            "{}/{}",
+            "{}/{}/blender.log",
             args.get_output_dir(),
-            args.get_id() + ".json"
+            args.get_id()
         ))
         .arg("-s")
         .arg(args.get_start_frame().to_string())
@@ -61,9 +58,9 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
         .arg(args.get_end_frame().to_string())
         .arg("-o")
         .arg(format!(
-            "{}/{}",
+            "{}/{}/frame_#####",
             args.get_output_dir(),
-            args.get_id() + "_#####"
+            args.get_id()
         ))
         .arg("-Y")
         .arg("-P")
@@ -82,6 +79,17 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
     };
 
     let output = child.wait_with_output()?;
+
+    // TODO write stdout
+    let mut log = File::create(format!("{}/{}/blender.stdout.log", args.get_output_dir(), args.get_id()))?;
+    log.write_all(&output.stdout)?;
+    log.flush()?;
+
+    // TODO write stderr
+    let mut log_err = File::create(format!("{}/{}/blender.stderr.log", args.get_output_dir(), args.get_id()))?;
+    log_err.write_all(&output.stderr)?;
+    log_err.flush()?;
+
     Ok(output.status)
 }
 
@@ -92,12 +100,12 @@ pub fn stitch_video(kargs: &KaleidoArgs) -> std::io::Result<()> {
             "-framerate",
             "60",
             "-i",
-            format!("{}/{}_%05d.png", kargs.get_output_dir(), kargs.get_id()).as_str(),
+            format!("{}/{}/frame_%05d.png", kargs.get_output_dir(), kargs.get_id()).as_str(),
             "-c:v",
             "libx264",
             "-pix_fmt",
             "yuv420p",
-            format!("{}/{}.mp4", kargs.get_output_dir(), kargs.get_id()).as_str(),
+            format!("{}/{}/video.mp4", kargs.get_output_dir(), kargs.get_id()).as_str(),
         ])
         .status()?;
 

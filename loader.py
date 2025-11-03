@@ -46,7 +46,7 @@ def init(scene):
             set_property(key, data["texture"][key])
             
     # save_blend_file(scene)
-    bpy.ops.wm.save_as_mainfile(filepath=data["output_directory"] + "/" + data["id"] + ".blend")
+    bpy.ops.wm.save_as_mainfile(filepath=data["output_directory"] + "/" + data["id"] + "/project.blend")
     
 def post_render(scene):
     print("post render")

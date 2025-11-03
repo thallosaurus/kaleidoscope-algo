@@ -35,22 +35,22 @@ pub struct KaleidoArgs {
     #[clap(skip = Uuid::new_v4().to_string())]
     id: String,
 
-    #[arg(short)]
-    output_dir: Option<String>,
+    #[clap(flatten)]
+    output: OutputArgs,
 
     #[arg(short, long)]
     animate: bool
 }
 
 impl KaleidoArgs {
-    pub fn random(output_dir: Option<String>) -> Self {
+    pub fn random(output_dir: OutputArgs) -> Self {
         Self {
             texture: TextureSelector::random(),
             polar: PolarArgs::random(),
             composite: CompositeArgs::random(),
             frames: FrameArgs::default(),
             id: Uuid::new_v4().to_string(),
-            output_dir: output_dir,
+            output: output_dir,
             animate: false
         }
     }
@@ -82,9 +82,9 @@ impl KaleidoArgs {
     }
 
     pub fn get_output_dir(&self) -> String {
-        let cwd = env::current_dir().expect("cannot access current working directory");
-        let p = cwd.as_path().to_str().unwrap();
-        self.output_dir.clone().unwrap_or(String::from(p))
+        /*let cwd = env::current_dir().expect("cannot access current working directory");
+        let p = cwd.as_path().to_str().unwrap();*/
+        self.output.output_dir.clone()
     }
 }
 
@@ -144,7 +144,7 @@ impl TextureSelector {
         // 5 = without uNoise
         // 6 = with uNoise
         // 7 = with Textured
-        let r = random_range(0..=5);
+        let r = random_range(0..=4);
         Self::from(r)
     }
 
@@ -251,6 +251,19 @@ impl FrameArgs {
 
 impl Default for FrameArgs {
     fn default() -> Self {
-        Self { frame_start: 1, frame_end: 100 }
+        Self { frame_start: 1, frame_end: 10 }
+    }
+}
+
+#[derive(Debug, Parser, Clone, Serialize)]
+pub struct OutputArgs {
+    #[arg(short)]
+    output_dir: String,
+}
+
+impl Default for OutputArgs {
+    fn default() -> Self {
+
+        Self { output_dir: todo!() }
     }
 }
