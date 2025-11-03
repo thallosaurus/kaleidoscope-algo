@@ -5,10 +5,19 @@ use serde_json::{Value, json};
 
 #[derive(Parser, Debug, Clone, Serialize)]
 pub struct WaveArgs {
+    #[arg(long)]
     scale: f32,
+    
+    #[arg(long)]
     distortion: f32,
+    
+    #[arg(long)]
     detail: f32,
+    
+    #[arg(long)]
     detail_roughness: f32,
+    
+    #[arg(long)]
     phase_offset: f32,
 }
 

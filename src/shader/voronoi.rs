@@ -5,8 +5,13 @@ use serde_json::{Value, json};
 
 #[derive(Parser, Debug, Clone, Serialize)]
 pub struct VoronoiArgs {
+    #[arg(long)]
     scale: f32,
+    
+    #[arg(long)]
     detail: f32,
+    
+    #[arg(long)]
     randomize: f32,
 }
 

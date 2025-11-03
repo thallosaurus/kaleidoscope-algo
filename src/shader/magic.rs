@@ -5,8 +5,13 @@ use serde_json::{Value, json};
 
 #[derive(Parser, Debug, Clone, Serialize)]
 pub struct MagicArgs {
+    #[arg(long)]
     depth: u8,
+
+    #[arg(long)]
     scale: f32,
+    
+    #[arg(long)]
     dist: f32,
 }
 

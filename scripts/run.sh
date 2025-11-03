@@ -1,2 +1,2 @@
 #!/bin/sh
-cargo run --release --bin kaleido -- -o $PWD/output random
+cargo run --release --bin kaleido random -o $PWD/output

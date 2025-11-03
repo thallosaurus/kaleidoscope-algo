@@ -91,15 +91,19 @@ impl KaleidoArgs {
 #[derive(Debug, Parser, Clone, Serialize)]
 struct PolarArgs {
     /// Specifies how many Repetitions the kaleidoscope has (3 - 12)
+    #[arg(long)]
     repetition: u8,
 
     /// Specifies the scaling
+    #[arg(long)]
     scaling: f32,
 
     /// Specifies the rotation offset
+    #[arg(long)]
     rotation: f32,
 
     /// Specifies the Ping-Pong
+    #[arg(long)]
     pingpong: f32,
 }
 
@@ -190,9 +194,16 @@ impl From<u8> for TextureSelector {
 
 #[derive(Debug, Parser, Clone, Serialize)]
 struct CompositeArgs {
+    #[arg(long)]
     lens_distortion: f32,
+
+    #[arg(long)]
     lens_dispersion: f32,
+    
+    #[arg(long)]
     hue: f32,
+
+    #[arg(long)]
     saturation: f32
 }
 
@@ -236,7 +247,10 @@ impl TexturedArgs {
 }
 #[derive(Parser, Debug, Clone, Serialize)]
 struct FrameArgs {
+    #[arg(long)]
     frame_start: u16,
+    
+    #[arg(long)]
     frame_end: u16
 }
 
@@ -251,19 +265,12 @@ impl FrameArgs {
 
 impl Default for FrameArgs {
     fn default() -> Self {
-        Self { frame_start: 1, frame_end: 10 }
+        Self { frame_start: 1, frame_end: 300 }
     }
 }
 
 #[derive(Debug, Parser, Clone, Serialize)]
 pub struct OutputArgs {
-    #[arg(short)]
+    #[arg(short, long)]
     output_dir: String,
-}
-
-impl Default for OutputArgs {
-    fn default() -> Self {
-
-        Self { output_dir: todo!() }
-    }
 }

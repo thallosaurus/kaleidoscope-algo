@@ -28,7 +28,6 @@ fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> 
 
 pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
     let encoded = BASE64_STANDARD.encode(args.json().to_string());
-    //let blender_exec_path = ").unwrap_or(String::from("blender"));
 
     let project_file = extract_static_file(BLEND_FILE)?;
     let project_borrow = project_file.borrow_mut();

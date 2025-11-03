@@ -41,7 +41,7 @@ fn main() -> Result<(), Error> {
     println!("{}", cmd);
 
     let json = serde_json::to_string(&kargs.json()).unwrap();
-    let mut file = File::create(format!("{}/{}/project.json", kargs.get_output_dir(), kargs.get_id()))?;
+    let mut file = File::create(format!("{}/{}/parameters.json", kargs.get_output_dir(), kargs.get_id()))?;
     file.write_all(json.as_bytes())?;
 
     stitch_video(&kargs).unwrap();
