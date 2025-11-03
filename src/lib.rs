@@ -14,28 +14,33 @@ use crate::shader::KaleidoArgs;
 pub mod shader;
 
 static BLEND_FILE: &[u8] = include_bytes!("../kaleido.blend");
+static PYTHON_LOADER: &[u8] = include_bytes!("../loader.py");
 
-fn extract_blend_file() -> io::Result<Rc<RefCell<NamedTempFile>>> {
-    let tmp = Rc::new(RefCell::new(NamedTempFile::new()?));
+fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> {
+    let blend_tmp = Rc::new(RefCell::new(NamedTempFile::new()?));
     {
-        let mut b = tmp.borrow_mut();
+        let mut b = blend_tmp.borrow_mut();
         let mut writer = BufWriter::new(b.as_file_mut());
-        writer.write(BLEND_FILE)?;
+        writer.write(buffer)?;
     }
-    Ok(tmp)
+    Ok(blend_tmp)
 }
 
 pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
     let encoded = BASE64_STANDARD.encode(args.json().to_string());
     let blender_exec_path = var("BLENDER").unwrap_or(String::from("blender"));
 
-    let project_file = extract_blend_file()?;
-    let borrow = project_file.borrow_mut();
-    let path = borrow.path();
+    let project_file = extract_static_file(BLEND_FILE)?;
+    let project_borrow = project_file.borrow_mut();
+    let project_path = project_borrow.path();
+
+    let loader_file = extract_static_file(PYTHON_LOADER)?;
+    let loader_borrow = loader_file.borrow_mut();
+    let loader_path = loader_borrow.path();
 
     let child = match Command::new(blender_exec_path)
         //.arg("kaleido.blend")
-        .arg(path.as_os_str())
+        .arg(project_path.as_os_str())
         .arg("--factory-startup")
         .arg("--log-level")
         .arg("-1")
@@ -57,7 +62,8 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
         ))
         .arg("-Y")
         .arg("-P")
-        .arg("loader.py")
+        .arg(loader_path.as_os_str())
+        //.arg("loader.py")
         .arg("-f")
         .arg("0")
         .arg("-b")

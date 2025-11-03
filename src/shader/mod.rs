@@ -43,14 +43,14 @@ pub struct KaleidoArgs {
 }
 
 impl KaleidoArgs {
-    pub fn random() -> Self {
+    pub fn random(output_dir: Option<String>) -> Self {
         Self {
             texture: TextureSelector::random(),
             polar: PolarArgs::random(),
             composite: CompositeArgs::random(),
             frames: FrameArgs::default(),
             id: Uuid::new_v4().to_string(),
-            output_dir: None,
+            output_dir: output_dir,
             animate: false
         }
     }
@@ -251,6 +251,6 @@ impl FrameArgs {
 
 impl Default for FrameArgs {
     fn default() -> Self {
-        Self { frame_start: 1, frame_end: 10 }
+        Self { frame_start: 1, frame_end: 100 }
     }
 }

@@ -14,6 +14,9 @@ use serde::Serialize;
 struct CliArgs {
     #[structopt(subcommand)]
     mode: CliModes,
+
+    #[arg(short)]
+    output_dir: Option<String>,
 }
 
 #[derive(Debug, Subcommand, Clone, Serialize)]
@@ -29,7 +32,7 @@ fn main() -> Result<(), Error> {
     let args = CliArgs::parse();
 
     let kargs = match args.mode {
-        CliModes::Random => KaleidoArgs::random(),
+        CliModes::Random => KaleidoArgs::random(args.output_dir),
         CliModes::Custom(kaleido_args) => kaleido_args,
     };
 
