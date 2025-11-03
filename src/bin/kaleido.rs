@@ -1,6 +1,6 @@
 use clap::Parser;
 use clap_derive::{Parser, Subcommand};
-use kaleidoscope_algo::{run_kaleidoscope, shader::KaleidoArgs};
+use kaleidosynth::{run_kaleidoscope, shader::KaleidoArgs};
 use serde::Serialize;
 
 /// Program to generate Kaleidoscopes using blender as a backend
@@ -13,7 +13,10 @@ struct CliArgs {
 
 #[derive(Debug, Subcommand, Clone, Serialize)]
 enum CliModes {
+    /// Randomized Kaleidoscope
     Random,
+
+    /// Create a parameterized kaleidoscope
     Custom(KaleidoArgs)
 }
 
@@ -25,7 +28,6 @@ fn main() {
         CliModes::Random => run_kaleidoscope(KaleidoArgs::random()),
         CliModes::Custom(kaleido_args) => run_kaleidoscope(kaleido_args),
     };
-    //println!("{}", args.get_json());
 
     cmd.wait_with_output().unwrap();
 }
