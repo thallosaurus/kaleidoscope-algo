@@ -35,8 +35,6 @@ fn main() -> Result<(), Error> {
 
     let cmd = run_kaleidoscope(&kargs);
 
-    cmd.wait_with_output().unwrap();
-
     let json = serde_json::to_string(&kargs.json()).unwrap();
 
     let mut file = File::create(format!("output/{}.json", kargs.get_id()))?;
