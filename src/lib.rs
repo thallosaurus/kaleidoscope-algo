@@ -7,6 +7,7 @@ use tempfile::NamedTempFile;
 
 use crate::shader::KaleidoArgs;
 pub mod shader;
+pub mod encoder;
 
 static BLEND_FILE: &[u8] = include_bytes!("../kaleido.blend");
 static PYTHON_LOADER: &[u8] = include_bytes!("../loader.py");
@@ -90,29 +91,4 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
     log_err.flush()?;
 
     Ok(output.status)
-}
-
-pub fn stitch_video(kargs: &KaleidoArgs) -> std::io::Result<()> {
-    println!("Stitching Video");
-    let status = Command::new("ffmpeg")
-        .args([
-            "-framerate",
-            "60",
-            "-i",
-            format!("{}/{}/frame_%05d.png", kargs.get_output_dir(), kargs.get_id()).as_str(),
-            "-c:v",
-            "libx264",
-            "-pix_fmt",
-            "yuv420p",
-            format!("{}/{}/video.mp4", kargs.get_output_dir(), kargs.get_id()).as_str(),
-        ])
-        .status()?;
-
-    if status.success() {
-        println!("video stitch sucessful");
-    } else {
-        eprintln!("error while stitching video");
-    }
-
-    Ok(())
 }

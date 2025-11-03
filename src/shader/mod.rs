@@ -1,5 +1,4 @@
 use core::panic;
-use std::env;
 use clap_derive::{Parser, Subcommand};
 use rand::random_range;
 use serde::Serialize;
@@ -265,7 +264,7 @@ impl FrameArgs {
 
 impl Default for FrameArgs {
     fn default() -> Self {
-        Self { frame_start: 1, frame_end: 300 }
+        Self { frame_start: 1, frame_end: 10 }
     }
 }
 

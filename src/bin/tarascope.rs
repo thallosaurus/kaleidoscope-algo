@@ -5,7 +5,7 @@ use std::{
 
 use clap::Parser;
 use clap_derive::{Parser, Subcommand};
-use kaleidosynth::{run_kaleidoscope, shader::{KaleidoArgs, OutputArgs}, stitch_video};
+use tarascope::{encoder::stitch_video, run_kaleidoscope, shader::{KaleidoArgs, OutputArgs}};
 use serde::Serialize;
 
 /// Program to generate Kaleidoscopes using blender as a backend
