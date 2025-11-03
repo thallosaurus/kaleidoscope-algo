@@ -5,6 +5,13 @@ import base64
 import json
 
 bpy.app.debug_wm = True
+    
+def import_texture(path):
+    tex = bpy.data.textures.new(name="custom_texture", type="IMAGE")
+    img = bpy.data.images.load(path)
+    tex.image = img
+    
+    return tex
 
 def decode_input_data(data):
     base64_bytes = data.encode("ascii")
@@ -26,12 +33,22 @@ def init(scene):
     set_property("scaling", data["scaling"])
     set_property("rotation", data["rotation"])
     set_property("pingpong", data["pingpong"])
-    
-    for key in data["texture"].keys():
-        set_property(key, data["texture"][key])
+    set_property("_frames_start", data["frames"]["_frames_start"])
+    set_property("_frames_max", data["frames"]["_frames_max"])
         
     for key in data["composite"].keys():
         set_property(key, data["composite"][key])
+        
+    if data["texture_index"] == 6:
+        bpy.data.node_groups["background"].nodes["texture"].image = bpy.data.images.load(data["texture"]["file_path"])
+    else:
+        for key in data["texture"].keys():
+            set_property(key, data["texture"][key])
+            
+    # save_blend_file(scene)
+    bpy.ops.wm.save_as_mainfile(filepath=data["output_directory"] + "/" + data["id"] + ".blend")
+        
+        #import_texture(data["texture"]["file_path"])
     
 def post_render(scene):
     print("post render")

@@ -2,3 +2,6 @@
 *.blend1
 output/*.png
 output/*.json
+output/*.log
+output/*.blend
+output/*.blend1

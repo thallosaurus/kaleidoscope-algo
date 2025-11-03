@@ -13,6 +13,8 @@ pub struct UnoiseArgs {
 }
 
 impl UnoiseArgs {
+
+    #[deprecated]
     pub fn random() -> Self {
         Self {
             scale: random_range(1.0..=15.0),

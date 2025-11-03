@@ -1,8 +1,10 @@
 use core::panic;
+use std::env;
 use clap_derive::{Parser, Subcommand};
 use rand::random_range;
 use serde::Serialize;
 use serde_json::{Value, json};
+use uuid::Uuid;
 
 use crate::shader::{
     gabor::GaborArgs, magic::MagicArgs, noise::NoiseArgs, unoise::UnoiseArgs, voronoi::VoronoiArgs, wave::WaveArgs
@@ -26,6 +28,15 @@ pub struct KaleidoArgs {
 
     #[clap(flatten)]
     composite: CompositeArgs,
+
+    #[clap(flatten)]
+    frames: FrameArgs,
+
+    #[clap(skip = Uuid::new_v4().to_string())]
+    id: String,
+
+    #[arg(short)]
+    output_dir: Option<String>
 }
 
 impl KaleidoArgs {
@@ -34,19 +45,42 @@ impl KaleidoArgs {
             texture: TextureSelector::random(),
             polar: PolarArgs::random(),
             composite: CompositeArgs::random(),
+            frames: FrameArgs::default(),
+            id: Uuid::new_v4().to_string(),
+            output_dir: None
         }
     }
 
     pub fn json(&self) -> Value {
         json!({
+            "id": self.get_id(),
+            "output_directory": self.get_output_dir(),
             "texture_index": self.texture.get_index(),
             "repetition": self.polar.repetition,
             "scaling": self.polar.scaling,
             "rotation": self.polar.rotation,
             "pingpong": self.polar.pingpong,
             "texture": self.texture.json(),
-            "composite": self.composite.json()
+            "composite": self.composite.json(),
+            "frames": self.frames.json()
         })
+    }
+
+    pub fn get_start_frame(&self) -> u16 {
+        self.frames.frame_start
+    }
+    pub fn get_end_frame(&self) -> u16 {
+        self.frames.frame_end
+    }
+
+    pub fn get_id(&self) -> String {
+        self.id.clone()
+    }
+
+    pub fn get_output_dir(&self) -> String {
+        let cwd = env::current_dir().expect("cannot access current working directory");
+        let p = cwd.as_path().to_str().unwrap();
+        self.output_dir.clone().unwrap_or(String::from(p))
     }
 }
 
@@ -58,7 +92,7 @@ struct PolarArgs {
     /// Specifies the scaling
     scaling: f32,
 
-    /// Specifies the rotation
+    /// Specifies the rotation offset
     rotation: f32,
 
     /// Specifies the Ping-Pong
@@ -70,7 +104,8 @@ impl PolarArgs {
         Self {
             repetition: random_range(3..=12),
             scaling: random_range(2.5..=12.0),
-            rotation: random_range(0.0..=360.0),
+            //rotation: random_range(0.0..=360.0),
+            rotation: 0.0,
             pingpong: random_range(0.5..=4.5),
         }
     }
@@ -111,13 +146,13 @@ impl TextureSelector {
 
     fn get_index(&self) -> u8 {
         match self {
-            TextureSelector::Gabor(_) => 1,
-            TextureSelector::Voronoi(_) => 2,
-            TextureSelector::Wave(_) => 3,
-            TextureSelector::Magic(_) => 4,
-            TextureSelector::Noise(_) => 5,
-            TextureSelector::Unoise(_) => 6,
-            TextureSelector::Textured(_) => 7,
+            TextureSelector::Gabor(_) => 0,
+            TextureSelector::Voronoi(_) => 1,
+            TextureSelector::Wave(_) => 2,
+            TextureSelector::Magic(_) => 3,
+            TextureSelector::Noise(_) => 4,
+            TextureSelector::Unoise(_) => 5,
+            TextureSelector::Textured(_) => 6,
         }
     }
 
@@ -169,7 +204,7 @@ impl CompositeArgs {
     }
     fn json(&self) -> Value {
         json!({
-            "composite_lens_distortion": -0.1,//self.lens_distortion,
+            "composite_lens_distortion": -0.1, //self.lens_distortion,
             "composite_lens_dispersion": -0.3, //self.lens_dispersion
             "composite_hue": self.hue,
             "composite_saturation": self.saturation
@@ -178,14 +213,40 @@ impl CompositeArgs {
 }
 
 #[derive(Parser, Debug, Clone, Serialize)]
-struct TexturedArgs {}
+struct TexturedArgs {
+    file_path: String
+}
 
 impl TexturedArgs {
     pub fn random() -> Self {
-        Self {}
+        Self {
+            file_path: String::from("path goes here")
+        }
     }
 
     pub fn json(&self) -> Value {
-        json!({})
+        json!({
+            "file_path": self.file_path
+        })
+    }
+}
+#[derive(Parser, Debug, Clone, Serialize)]
+struct FrameArgs {
+    frame_start: u16,
+    frame_end: u16
+}
+
+impl FrameArgs {
+    pub fn json(&self) -> Value {
+        json!({
+            "_frames_start": self.frame_start,
+            "_frames_max": self.frame_end
+        })
+    }
+}
+
+impl Default for FrameArgs {
+    fn default() -> Self {
+        Self { frame_start: 1, frame_end: 10 }
     }
 }

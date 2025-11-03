@@ -33,13 +33,13 @@ fn main() -> Result<(), Error> {
         CliModes::Custom(kaleido_args) => kaleido_args,
     };
 
-    let (id, cmd) = run_kaleidoscope(&kargs);
+    let cmd = run_kaleidoscope(&kargs);
 
     cmd.wait_with_output().unwrap();
 
     let json = serde_json::to_string(&kargs.json()).unwrap();
 
-    let mut file = File::create(format!("output/{}.json", id))?;
+    let mut file = File::create(format!("output/{}.json", kargs.get_id()))?;
     file.write_all(json.as_bytes())?;
     Ok(())
 }
