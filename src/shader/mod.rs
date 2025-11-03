@@ -1,6 +1,4 @@
 use core::panic;
-
-use clap::command;
 use clap_derive::{Parser, Subcommand};
 use rand::random_range;
 use serde::Serialize;
@@ -24,6 +22,9 @@ pub struct KaleidoArgs {
 
     #[clap(flatten)]
     polar: PolarArgs,
+
+    #[clap(flatten)]
+    composite: CompositeArgs,
 }
 
 impl KaleidoArgs {
@@ -31,17 +32,19 @@ impl KaleidoArgs {
         Self {
             texture: TextureSelector::random(),
             polar: PolarArgs::random(),
+            composite: CompositeArgs::random(),
         }
     }
 
-    pub fn get_json(&self) -> Value {
+    pub fn json(&self) -> Value {
         json!({
             "texture_index": self.texture.get_index(),
             "repetition": self.polar.repetition,
             "scaling": self.polar.scaling,
             "rotation": self.polar.rotation,
             "pingpong": self.polar.pingpong,
-            "texture": self.texture.get_json()
+            "texture": self.texture.json(),
+            "composite": self.composite.json()
         })
     }
 }
@@ -98,7 +101,6 @@ enum TextureSelector {
 
 impl TextureSelector {
     pub fn random() -> Self {
-
         // 5 = without uNoise
         // 6 = with uNoise
         // 7 = with Textured
@@ -118,7 +120,7 @@ impl TextureSelector {
         }
     }
 
-    fn get_json(&self) -> Value {
+    fn json(&self) -> Value {
         match self {
             TextureSelector::Gabor(gabor_args) => gabor_args.json(),
             TextureSelector::Voronoi(voronoi_args) => voronoi_args.json(),
@@ -143,6 +145,27 @@ impl From<u8> for TextureSelector {
             6 => TextureSelector::Textured(TexturedArgs::random()),
             _ => panic!("invalid texture index"),
         }
+    }
+}
+
+#[derive(Debug, Parser, Clone, Serialize)]
+struct CompositeArgs {
+    lens_distortion: f32,
+    lens_dispersion: f32,
+}
+
+impl CompositeArgs {
+    fn random() -> Self {
+        Self {
+            lens_distortion: random_range(-1.0..=-0.5),
+            lens_dispersion: random_range(-1.0..=-0.5),
+        }
+    }
+    fn json(&self) -> Value {
+        json!({
+            "composite_lens_distortion": -0.1,//self.lens_distortion,
+            "composite_lens_dispersion": -0.3 //self.lens_dispersion
+        })
     }
 }
 

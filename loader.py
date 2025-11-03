@@ -1,6 +1,6 @@
 # blender -b -Y -P loader.py
 import sys
-import bpy
+import bpy # type: ignore
 import base64
 import json
 
@@ -27,9 +27,12 @@ def init(scene):
     
     for key in data["texture"].keys():
         set_property(key, data["texture"][key])
+        
+    for key in data["composite"].keys():
+        set_property(key, data["composite"][key])
     
 def post_render(scene):
-    print("post render")    
+    print("post render")
     # this forces blender to quit itself
     #bpy.ops.wm.quit_blender()
 
