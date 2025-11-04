@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.24.2/dist/css/uikit.min.css" />
+
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.24.2/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.24.2/dist/js/uikit-icons.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>
+            Tarascopes (BETA)
+        </h1>
+    </header>
+
+    <div class="gallery" uk-grid>
+        {{ for scopes of content }}
+        <div>
+            <div class="uk-card uk-card-default uk-card-body">
+
+                <a href="http://nas.local/assets/{{scopes.video}}">
+                    <img width="256px" height="256px" src="http://nas.local/assets/{{scopes.thumbnail}}"></img>
+                </a>
+            </div>
+        </div>
+
+        {{ /for }}
+    </div>
+</body>
+</html>

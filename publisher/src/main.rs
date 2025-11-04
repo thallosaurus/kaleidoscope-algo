@@ -1,4 +1,4 @@
-use std::{env::{self, current_dir, var}, error::Error};
+use std::{env::var, error::Error};
 
 use clap::Parser;
 use clap_derive::Parser;

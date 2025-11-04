@@ -1,0 +1,11 @@
+{
+  "tasks": {
+    "dev": "deno run -A --watch --env-file main.ts"
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@1",
+    "hono": "npm:hono@^4.10.4",
+    "postgres": "npm:postgres@^3.4.7",
+    "ventojs": "npm:ventojs@^2.2.0"
+  }
+}
