@@ -264,7 +264,7 @@ impl FrameArgs {
 
 impl Default for FrameArgs {
     fn default() -> Self {
-        Self { frame_start: 1, frame_end: 100 }
+        Self { frame_start: 1, frame_end: 300 }
     }
 }
 
