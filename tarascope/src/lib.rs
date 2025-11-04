@@ -11,11 +11,15 @@ pub mod encoder;
 
 static BLEND_FILE: &[u8] = include_bytes!("../kaleido.blend");
 static PYTHON_LOADER: &[u8] = include_bytes!("../loader.py");
+
 #[cfg(target_os = "macos")]
 static BLENDER_PATH: &str = "/Applications/Blender.app/Contents/MacOS/Blender";
 
 #[cfg(target_os = "linux")]
 static BLENDER_PATH: &str = "blender";
+
+#[cfg(target_os = "windows")]
+static BLENDER_PATH: &str = "C:\\Program Files\\Blender Foundation\\Blender\\blender.exe";
 
 fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> {
     let blend_tmp = Rc::new(RefCell::new(NamedTempFile::new()?));
@@ -27,25 +31,32 @@ fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> 
     Ok(blend_tmp)
 }
 
-pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
+pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
+    // Encode the parameters to base64
     let encoded = BASE64_STANDARD.encode(args.json().to_string());
 
+    // extract Project File to a temporary location which gets dropped after the job is done
     let project_file = extract_static_file(BLEND_FILE)?;
     let project_borrow = project_file.borrow_mut();
     let project_path = project_borrow.path();
 
+    // same with the loader file
     let loader_file = extract_static_file(PYTHON_LOADER)?;
     let loader_borrow = loader_file.borrow_mut();
     let loader_path = loader_borrow.path();
 
-    create_dir(format!("{}/{}",args.get_output_dir(),args.get_id()))?;
+    // create the target project
+    create_dir(format!("{}/{}",args.get_output_dir(),args.get_id())).expect("couldn't create project dir");
+
+    // write the parameters before the render begins
+    let json = serde_json::to_string(&args.json()).unwrap();
+    let mut file = File::create(format!("{}/{}/parameters.json", args.get_output_dir(), args.get_id()))?;
+    file.write_all(json.as_bytes())?;
 
     let child = match Command::new(BLENDER_PATH)
         //.arg("kaleido.blend")
         .arg(project_path.as_os_str())
         .arg("--factory-startup")
-        .arg("--log-level")
-        .arg("-1")
         .arg("--log-file")
         .arg(format!(
             "{}/{}/blender.log",
@@ -78,6 +89,7 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
         Err(err) => panic!("{}", err),
     };
 
+    // wait until the render has finished
     let output = child.wait_with_output()?;
 
     // TODO write stdout
@@ -90,5 +102,20 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<ExitStatus> {
     log_err.write_all(&output.stderr)?;
     log_err.flush()?;
 
-    Ok(output.status)
+    //Ok(output.status)
+    Ok(KaleidoOutput::new(output.status, args.get_output_dir()))
+}
+
+pub struct KaleidoOutput {
+    pub exit_status: ExitStatus,
+    _output_directory: String
+}
+
+impl KaleidoOutput {
+    pub fn new(status: ExitStatus, directory: String) -> Self {
+        KaleidoOutput {
+            _output_directory: directory,
+            exit_status: status
+        }
+    }
 }

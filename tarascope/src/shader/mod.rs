@@ -264,12 +264,12 @@ impl FrameArgs {
 
 impl Default for FrameArgs {
     fn default() -> Self {
-        Self { frame_start: 1, frame_end: 300 }
+        Self { frame_start: 1, frame_end: 100 }
     }
 }
 
 #[derive(Debug, Parser, Clone, Serialize)]
 pub struct OutputArgs {
     #[arg(short, long)]
-    output_dir: String,
+    pub output_dir: String,
 }

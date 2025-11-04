@@ -1,3 +1,3 @@
 [workspace]
-members = ["tarascope"]
+members = [ "publisher","tarascope"]
 resolver = "3"

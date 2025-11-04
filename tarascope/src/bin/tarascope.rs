@@ -3,7 +3,7 @@ use std::{
     io::{Error, Write},
 };
 
-use clap::Parser;
+use clap::{Parser, command};
 use clap_derive::{Parser, Subcommand};
 use tarascope::{encoder::stitch_video, run_kaleidoscope, shader::{KaleidoArgs, OutputArgs}};
 use serde::Serialize;
@@ -38,11 +38,7 @@ fn main() -> Result<(), Error> {
     };
 
     let cmd = run_kaleidoscope(&kargs)?;
-    println!("{}", cmd);
-
-    let json = serde_json::to_string(&kargs.json()).unwrap();
-    let mut file = File::create(format!("{}/{}/parameters.json", kargs.get_output_dir(), kargs.get_id()))?;
-    file.write_all(json.as_bytes())?;
+    println!("{}", cmd.exit_status);
 
     stitch_video(&kargs).unwrap();
     Ok(())

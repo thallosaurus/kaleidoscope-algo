@@ -1,0 +1,12 @@
+[package]
+name = "publisher"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = "4.5.51"
+clap_derive = "4.5.49"
+dotenv = "0.15.0"
+sqlx = { version = "0.8", features = ["json", "postgres", "runtime-tokio"] }
+tokio = { version = "1.48.0", features = ["full"] }
+tarascope = { path = "../tarascope" }
