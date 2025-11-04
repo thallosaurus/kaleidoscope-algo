@@ -20,8 +20,13 @@ interface ShowcaseItem {
 const app = new Hono();
 const tmpl = vento();
 
-const api = async (): Promise<ShowcaseItem> => {
+const api_full = async (): Promise<ShowcaseItem> => {
   const res = await pg`SELECT * FROM showcase ORDER BY ts DESC`;
+  return res as unknown as ShowcaseItem;
+}
+
+const api = async (): Promise<ShowcaseItem> => {
+  const res = await pg`SELECT id, video, gif, thumbnail, ts FROM showcase ORDER BY ts DESC`;
   return res as unknown as ShowcaseItem;
 }
 
