@@ -18,16 +18,16 @@
         </h1>
     </header>
 
-    <div class="gallery" uk-grid>
+    <div class="gallery" uk-grid-collapse>
         {{ for scopes of content }}
-        <div>
-            <div class="uk-card uk-card-default uk-card-body">
-
-                <a href="http://nas.local/assets/{{scopes.video}}">
-                    <img width="256px" height="256px" src="http://nas.local/assets/{{scopes.thumbnail}}"></img>
-                </a>
-            </div>
-        </div>
+<div>
+    
+    <div class="uk-card uk-card-default uk-card-body">
+        <a href="http://nas.local/assets/{{scopes.video}}">
+            <img width="256px" height="256px" src="http://nas.local/assets/{{scopes.thumbnail}}"></img>
+        </a>
+    </div>
+</div>
 
         {{ /for }}
     </div>
