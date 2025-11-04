@@ -4,11 +4,11 @@ import vento from 'ventojs';
 
 //const app = new Hono();
 const pg = postgres({
-  host                 : Deno.env.get("PG_HOST"),            // Postgres ip address[s] or domain name[s]
-  port                 : 5432,          // Postgres server port[s]
-  database             : Deno.env.get("PG_DB"),            // Name of database to connect to
-  username             : Deno.env.get("PG_USER"),            // Username of database user
-  password             : Deno.env.get("PG_PASS"),            // Password of database user
+  host: Deno.env.get("PG_HOST"),            // Postgres ip address[s] or domain name[s]
+  port: 5432,          // Postgres server port[s]
+  database: Deno.env.get("PG_DB"),            // Name of database to connect to
+  username: Deno.env.get("PG_USER"),            // Username of database user
+  password: Deno.env.get("PG_PASS"),            // Password of database user
 });
 
 interface ShowcaseItem {
