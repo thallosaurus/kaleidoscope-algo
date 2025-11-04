@@ -21,7 +21,7 @@ const app = new Hono();
 const tmpl = vento();
 
 const api = async (): Promise<ShowcaseItem> => {
-  const res = await pg`SELECT * FROM showcase`;
+  const res = await pg`SELECT * FROM showcase ORDER BY ts DESC`;
   return res as unknown as ShowcaseItem;
 }
 
