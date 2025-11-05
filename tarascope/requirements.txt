@@ -1,0 +1,5 @@
+pillow
+timedelta
+dotenv
+mysql-connector-python
+boto3

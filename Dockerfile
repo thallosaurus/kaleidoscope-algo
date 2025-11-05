@@ -50,6 +50,8 @@ RUN mkdir /opt/tarascope
 RUN mv target/release/publisher /opt/tarascope/tarascope-publisher
 ENV PATH="/opt/tarascope:${PATH}"
 
+RUN blender -b --python-expr "import pip; import sys; print(pip.__version__); pip.main(['install', '-r', 'requirements.txt']);raise SystemExit"
+
 CMD ["tarascope-publisher"]
 
 # docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=nvidia.com/gpu=all -it dockertest
