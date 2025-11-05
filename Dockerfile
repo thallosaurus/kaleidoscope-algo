@@ -42,12 +42,14 @@ ENV EGL_DRIVER=nvidia
 ENV __EGL_VENDOR_LIBRARY_DIRS=/usr/share/glvnd/egl_vendor.d
 
 # Setup Generator
-WORKDIR /opt
-RUN mkdir /opt/tarascope
-WORKDIR /opt/tarascope
+RUN mkdir /opt/build
+WORKDIR /opt/build
 COPY . .
 RUN cargo build --release --bin publisher
+RUN mkdir /opt/tarascope
+RUN mv target/release/publisher /opt/tarascope/tarascope-publisher
+ENV PATH="/opt/tarascope:${PATH}"
 
-#CMD ["publisher"]
+CMD ["tarascope-publisher"]
 
 # docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=nvidia.com/gpu=all -it dockertest
