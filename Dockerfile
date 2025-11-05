@@ -18,7 +18,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 RUN curl -o /tmp/blender.tar.xz https://download.blender.org/release/Blender4.5/blender-4.5.4-linux-x64.tar.xz
 RUN tar -xvf /tmp/blender.tar.xz
 RUN rm /tmp/blender.tar.xz
-RUN mv blender-4.5.4-linux-x64 blender
+RUN mv blender-4.5.4-linux-x64 /opt/blender
 ENV PATH="/opt/blender:${PATH}"
 
 # Clone and build libglvnd for NVIDIA EGL support
