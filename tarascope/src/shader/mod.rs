@@ -91,24 +91,32 @@ impl KaleidoArgs {
         self.output.output_dir.clone()
     }
 
-    pub fn get_project_folder(&self) -> String {
+    pub fn project_folder_path(&self) -> String {
         format!("{}/{}", self.output_dir(), self.get_id())
     }
 
     pub fn blender_stdout_path(&self) -> String {
-        format!("{}/blender.stdout.log", self.get_project_folder())
+        format!("{}/blender.stdout.log", self.project_folder_path())
     }
     
     pub fn blender_stderr_path(&self) -> String {
-        format!("{}/blender.stderr.log", self.get_project_folder())
+        format!("{}/blender.stderr.log", self.project_folder_path())
     }
     
     pub fn parameters_path(&self) -> String {
-        format!("{}/parameters.json", self.get_project_folder())
+        format!("{}/parameters.json", self.project_folder_path())
     }
     
     pub fn blender_project_path(&self) -> String {
-        format!("{}/project.blend", self.get_project_folder())
+        format!("{}/project.blend", self.project_folder_path())
+    }
+
+    pub fn blender_frame_path(&self) -> String {
+        format!("{}/frame_#####", self.project_folder_path())
+    }
+
+    pub fn blender_native_log_path(&self) -> String {
+        format!("{}/blender.log", self.project_folder_path())
     }
 }
 

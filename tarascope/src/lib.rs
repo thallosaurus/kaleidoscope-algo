@@ -51,15 +51,15 @@ pub async fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
     // extract Project File to a temporary location which gets dropped after the job is done
     let project_file = extract_static_file(BLEND_FILE)?;
     let project_borrow = project_file.borrow_mut();
-    let project_path = project_borrow.path();
+    let tmp_project_path = project_borrow.path();
 
     // same with the loader file
     let loader_file = extract_static_file(PYTHON_LOADER)?;
     let loader_borrow = loader_file.borrow_mut();
-    let loader_path = loader_borrow.path();
+    let tmp_loader_path = loader_borrow.path();
 
     // create the target project
-    create_dir(args.get_project_folder()).expect("couldn't create project dir");
+    create_dir(args.project_folder_path()).expect("couldn't create project dir");
 
     // write the parameters before the render begins
     let json = serde_json::to_string(&args.json()).unwrap();
@@ -79,19 +79,19 @@ pub async fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
             child_fd: 7,
         }])
         .unwrap()
-        .arg(project_path.as_os_str())
+        .arg(tmp_project_path.as_os_str())
         .arg("--factory-startup")
         .arg("--log-file")
-        .arg(format!("{}/blender.log", args.get_project_folder()))
+        .arg(args.blender_native_log_path())
         .arg("-s")
         .arg(args.get_start_frame().to_string())
         .arg("-e")
         .arg(args.get_end_frame().to_string())
         .arg("-o")
-        .arg(format!("{}/frame_#####", args.get_project_folder()))
+        .arg(args.blender_frame_path())
         .arg("-Y")
         .arg("-P")
-        .arg(loader_path.as_os_str())
+        .arg(tmp_loader_path.as_os_str())
         //.arg("loader.py")
         .arg("-f")
         .arg("0")
@@ -114,11 +114,11 @@ pub async fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
     let stderr = child.stderr.take().unwrap();
 
     //let output_dir = format!("{}/{}", args.get_output_dir(), args.get_id());
-    let output_dir = args.get_project_folder();
 
     // stdout reader
+    let stdout_path = args.blender_stdout_path();
     let stdout_reader = thread::spawn(move || {
-        let mut log = File::create(format!("{}/blender.stdout.log", output_dir))
+        let mut log = File::create(stdout_path)
             .expect("failed to create output log");
         for line in BufReader::new(stdout).lines() {
             let l = line.unwrap();
@@ -129,9 +129,9 @@ pub async fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
     });
 
     // stderr reader
-    let output_dir = args.get_project_folder();
+    let stderr_path = args.blender_stderr_path();
     let stderr_reader = thread::spawn(move || {
-        let mut log_err = File::create(format!("{}/blender.stderr.log", output_dir))
+        let mut log_err = File::create(stderr_path)
             .expect("failed to create output error log");
         for line in BufReader::new(stderr).lines() {
             let l = line.unwrap();
