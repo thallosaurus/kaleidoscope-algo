@@ -3,9 +3,13 @@ import sys
 import bpy # type: ignore
 import base64
 import json
+import os
+#import psycopg2
 
 bpy.app.debug_wm = True
-    
+writer_fd = sys.argv[-2]
+back_channel = open('/dev/fd/' + writer_fd, 'w')
+
 def import_texture(path):
     tex = bpy.data.textures.new(name="custom_texture", type="IMAGE")
     img = bpy.data.images.load(path)

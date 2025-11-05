@@ -1,5 +1,6 @@
-pillow
-timedelta
-dotenv
-mysql-connector-python
-boto3
+#pillow
+#timedelta
+#dotenv
+#mysql-connector-python
+#boto3
+pycopg2-binary

@@ -1,5 +1,5 @@
 use std::{
-    cell::RefCell, fs::{File, create_dir}, io::{self, BufWriter, Write}, process::{Command, ExitStatus}, rc::Rc
+    cell::RefCell, fs::{File, create_dir}, io::{self, BufRead, BufReader, BufWriter, Write, pipe}, os::fd::AsRawFd, process::{Command, ExitStatus}, rc::Rc, thread
 };
 
 use base64::{Engine, prelude::BASE64_STANDARD};
@@ -53,7 +53,10 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
     let mut file = File::create(format!("{}/{}/parameters.json", args.get_output_dir(), args.get_id()))?;
     file.write_all(json.as_bytes())?;
 
-    let child = match Command::new(BLENDER_PATH)
+    let (reader, writer) = pipe().unwrap();
+    let writer_fd = writer.as_raw_fd();
+
+    let mut child = match Command::new(BLENDER_PATH)
         //.arg("kaleido.blend")
         .arg(project_path.as_os_str())
         .arg("--factory-startup")
@@ -82,28 +85,58 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
         .arg("-b")
         .arg("-a")
         .arg("--")
+        .arg(format!("{}", writer_fd))
         .arg(encoded)
         .spawn()
     {
         Ok(child) => child,
-        Err(err) => panic!("{}", err),
+        Err(err) => panic!("error while spawning subprocess: {}", err),
     };
 
     // wait until the render has finished
-    let output = child.wait_with_output()?;
+    //let output = child.wait_with_output()?;
+
+    let stdout = child.stdout.take().unwrap();
+    let stderr = child.stderr.take().unwrap();
+
+    let output_dir = format!("{}/{}", args.get_output_dir(), args.get_id());
+    
+    let stdout_reader = thread::spawn(move || {
+        let mut log = File::create(format!("{}/blender.stdout.log", output_dir)).expect("failed to create output log");
+        for line in BufReader::new(stdout).lines() {
+            let l = line.unwrap();
+            println!("{}", l);
+            log.write_all(l.as_bytes()).expect("error writing to output log");
+        }
+    });
+    
+    let output_dir = format!("{}/{}", args.get_output_dir(), args.get_id());
+    let stderr_reader = thread::spawn(move || {
+        let mut log_err = File::create(format!("{}/blender.stderr.log", output_dir)).expect("failed to create output error log");
+        for line in BufReader::new(stderr).lines() {
+            let l = line.unwrap();
+            eprintln!("[stderr] {}", l);
+            log_err.write_all(l.as_bytes()).expect("error writing to output log");
+        }
+    });
+
+    stdout_reader.join().unwrap();
+    stderr_reader.join().unwrap();
+
+    let output = child.wait()?;
 
     // TODO write stdout
-    let mut log = File::create(format!("{}/{}/blender.stdout.log", args.get_output_dir(), args.get_id()))?;
+    /*let mut log = File::create(format!("{}/{}/blender.stdout.log", args.get_output_dir(), args.get_id()))?;
     log.write_all(&output.stdout)?;
     log.flush()?;
 
     // TODO write stderr
     let mut log_err = File::create(format!("{}/{}/blender.stderr.log", args.get_output_dir(), args.get_id()))?;
     log_err.write_all(&output.stderr)?;
-    log_err.flush()?;
+    log_err.flush()?;*/
 
     //Ok(output.status)
-    Ok(KaleidoOutput::new(output.status, args.get_output_dir()))
+    Ok(KaleidoOutput::new(output, args.get_output_dir()))
 }
 
 pub struct KaleidoOutput {
