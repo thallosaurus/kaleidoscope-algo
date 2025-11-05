@@ -1,13 +1,20 @@
 use std::{
-    cell::RefCell, fs::{File, create_dir}, io::{self, BufRead, BufReader, BufWriter, Write, pipe}, os::fd::AsRawFd, process::{Command, ExitStatus}, rc::Rc, thread
+    cell::RefCell,
+    fs::{File, create_dir},
+    io::{self, BufRead, BufReader, BufWriter, Write, pipe},
+    os::fd::AsRawFd,
+    process::{Command, ExitStatus, Stdio},
+    rc::Rc,
+    thread,
 };
 
-use base64::{Engine, prelude::BASE64_STANDARD};
+use command_fds::{CommandFdExt, FdMapping};
+use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
 
 use crate::shader::KaleidoArgs;
-pub mod shader;
 pub mod encoder;
+pub mod shader;
 
 static BLEND_FILE: &[u8] = include_bytes!("../kaleido.blend");
 static PYTHON_LOADER: &[u8] = include_bytes!("../loader.py");
@@ -21,6 +28,12 @@ static BLENDER_PATH: &str = "blender";
 #[cfg(target_os = "windows")]
 static BLENDER_PATH: &str = "C:\\Program Files\\Blender Foundation\\Blender\\blender.exe";
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RenderStatus {
+    pub id: String,
+    pub status: u32,
+}
+
 fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> {
     let blend_tmp = Rc::new(RefCell::new(NamedTempFile::new()?));
     {
@@ -31,9 +44,9 @@ fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> 
     Ok(blend_tmp)
 }
 
-pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
+pub async fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
     // Encode the parameters to base64
-    let encoded = BASE64_STANDARD.encode(args.json().to_string());
+    let encoded = args.base64();
 
     // extract Project File to a temporary location which gets dropped after the job is done
     let project_file = extract_static_file(BLEND_FILE)?;
@@ -46,36 +59,36 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
     let loader_path = loader_borrow.path();
 
     // create the target project
-    create_dir(format!("{}/{}",args.get_output_dir(),args.get_id())).expect("couldn't create project dir");
+    create_dir(args.get_project_folder()).expect("couldn't create project dir");
 
     // write the parameters before the render begins
     let json = serde_json::to_string(&args.json()).unwrap();
-    let mut file = File::create(format!("{}/{}/parameters.json", args.get_output_dir(), args.get_id()))?;
+    let mut file = File::create(args.parameters_path())?;
     file.write_all(json.as_bytes())?;
 
+    // open process communication pipe
     let (reader, writer) = pipe().unwrap();
     let writer_fd = writer.as_raw_fd();
 
     let mut child = match Command::new(BLENDER_PATH)
         //.arg("kaleido.blend")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .fd_mappings(vec![FdMapping {
+            parent_fd: writer.into(),
+            child_fd: 7,
+        }])
+        .unwrap()
         .arg(project_path.as_os_str())
         .arg("--factory-startup")
         .arg("--log-file")
-        .arg(format!(
-            "{}/{}/blender.log",
-            args.get_output_dir(),
-            args.get_id()
-        ))
+        .arg(format!("{}/blender.log", args.get_project_folder()))
         .arg("-s")
         .arg(args.get_start_frame().to_string())
         .arg("-e")
         .arg(args.get_end_frame().to_string())
         .arg("-o")
-        .arg(format!(
-            "{}/{}/frame_#####",
-            args.get_output_dir(),
-            args.get_id()
-        ))
+        .arg(format!("{}/frame_#####", args.get_project_folder()))
         .arg("-Y")
         .arg("-P")
         .arg(loader_path.as_os_str())
@@ -96,30 +109,49 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
     // wait until the render has finished
     //let output = child.wait_with_output()?;
 
+    // Take stdout/stderr ownership
     let stdout = child.stdout.take().unwrap();
     let stderr = child.stderr.take().unwrap();
 
-    let output_dir = format!("{}/{}", args.get_output_dir(), args.get_id());
-    
+    //let output_dir = format!("{}/{}", args.get_output_dir(), args.get_id());
+    let output_dir = args.get_project_folder();
+
+    // stdout reader
     let stdout_reader = thread::spawn(move || {
-        let mut log = File::create(format!("{}/blender.stdout.log", output_dir)).expect("failed to create output log");
+        let mut log = File::create(format!("{}/blender.stdout.log", output_dir))
+            .expect("failed to create output log");
         for line in BufReader::new(stdout).lines() {
             let l = line.unwrap();
             println!("{}", l);
-            log.write_all(l.as_bytes()).expect("error writing to output log");
-        }
-    });
-    
-    let output_dir = format!("{}/{}", args.get_output_dir(), args.get_id());
-    let stderr_reader = thread::spawn(move || {
-        let mut log_err = File::create(format!("{}/blender.stderr.log", output_dir)).expect("failed to create output error log");
-        for line in BufReader::new(stderr).lines() {
-            let l = line.unwrap();
-            eprintln!("[stderr] {}", l);
-            log_err.write_all(l.as_bytes()).expect("error writing to output log");
+            log.write_all(l.as_bytes())
+                .expect("error writing to output log");
         }
     });
 
+    // stderr reader
+    let output_dir = args.get_project_folder();
+    let stderr_reader = thread::spawn(move || {
+        let mut log_err = File::create(format!("{}/blender.stderr.log", output_dir))
+            .expect("failed to create output error log");
+        for line in BufReader::new(stderr).lines() {
+            let l = line.unwrap();
+            eprintln!("[stderr] {}", l);
+            log_err
+                .write_all(l.as_bytes())
+                .expect("error writing to output log");
+        }
+    });
+
+    let status_reader = thread::spawn(move || {
+        for line in BufReader::new(reader).lines() {
+            let l = line.unwrap();
+
+            let status = serde_json::from_str::<RenderStatus>(l.as_str()).unwrap();
+            println!("[status] {:?}", status);
+        }
+    });
+
+    status_reader.join().unwrap();
     stdout_reader.join().unwrap();
     stderr_reader.join().unwrap();
 
@@ -136,19 +168,19 @@ pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
     log_err.flush()?;*/
 
     //Ok(output.status)
-    Ok(KaleidoOutput::new(output, args.get_output_dir()))
+    Ok(KaleidoOutput::new(output, args.output_dir()))
 }
 
 pub struct KaleidoOutput {
     pub exit_status: ExitStatus,
-    _output_directory: String
+    _output_directory: String,
 }
 
 impl KaleidoOutput {
     pub fn new(status: ExitStatus, directory: String) -> Self {
         KaleidoOutput {
             _output_directory: directory,
-            exit_status: status
+            exit_status: status,
         }
     }
 }

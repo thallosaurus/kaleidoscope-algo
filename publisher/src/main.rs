@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!("{}", args.out.output_dir);
     let kaleidoargs = KaleidoArgs::random(args.out);
-    let output = run_kaleidoscope(&kaleidoargs).unwrap();
+    let output = run_kaleidoscope(&kaleidoargs).await.unwrap();
 
     let j = kaleidoargs.json();
 

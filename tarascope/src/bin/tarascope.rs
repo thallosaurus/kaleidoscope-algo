@@ -29,7 +29,8 @@ enum CliModes {
     Custom(KaleidoArgs),
 }
 
-fn main() -> Result<(), Error> {
+#[tokio::main]
+async fn main() -> Result<(), Error> {
     let args = CliArgs::parse();
 
     let kargs = match args.mode {
@@ -37,7 +38,7 @@ fn main() -> Result<(), Error> {
         CliModes::Custom(kaleido_args) => kaleido_args,
     };
 
-    let cmd = run_kaleidoscope(&kargs)?;
+    let cmd = run_kaleidoscope(&kargs).await?;
     println!("{}", cmd.exit_status);
 
     stitch_video(&kargs).unwrap();
