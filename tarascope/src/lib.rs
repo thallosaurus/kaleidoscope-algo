@@ -1,5 +1,5 @@
 use std::{
-    cell::RefCell, fs::{File, create_dir}, io::{self, BufRead, BufReader, BufWriter, Write, pipe}, os::fd::AsRawFd, process::ExitStatus, rc::Rc, thread
+    cell::RefCell, fs::{File, create_dir}, io::{self, BufRead, BufReader, BufWriter, Write}, os::fd::AsRawFd, process::ExitStatus, rc::Rc, thread
 };
 
 use command_fds::{CommandFdExt, FdMapping};
