@@ -44,6 +44,7 @@ pub struct KaleidoArgs {
 
 impl KaleidoArgs {
     pub fn random(output_dir: OutputArgs) -> Self {
+        println!("[DEBUG] {}", output_dir.output_dir);
         Self {
             texture: TextureSelector::random(),
             polar: PolarArgs::random(),
