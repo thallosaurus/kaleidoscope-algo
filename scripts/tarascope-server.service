@@ -7,7 +7,7 @@ After=network-online.target
 Type=simple
 User=rillo
 WorkingDirectory=/home/rillo/kaleidoscope-algo
-ExecStart=/home/rillo/kaleidoscope-algo/target/release/tarascope-server --output-dir /mnt/blender_nfs/taracope
+ExecStart=/home/rillo/kaleidoscope-algo/target/release/tarascope-server --output-dir /mnt/blender_nfs/tarascope
 Restart=on-failure
 
 [Install]
