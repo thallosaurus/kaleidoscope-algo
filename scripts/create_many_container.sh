@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -a && source .env && set +a
+set -a && source .env
 
 for i in $(seq 1 10);
 do
