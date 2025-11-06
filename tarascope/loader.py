@@ -30,7 +30,7 @@ def set_property(key, value):
     bpy.data.objects["Plane"][key] = value
 
 
-def render_init(scene):
+def r_init(scene):
     global data
     set_property("texture_index", data["texture_index"])
     set_property("repetition", data["repetition"])
@@ -59,6 +59,6 @@ def post_render(scene):
     back_channel.flush()
 
 bpy.app.handlers.render_init.clear()
-bpy.app.handlers.render_init.append(render_init)
+bpy.app.handlers.render_init.append(r_init)
 bpy.app.handlers.render_post.clear()
 bpy.app.handlers.render_post.append(post_render)
