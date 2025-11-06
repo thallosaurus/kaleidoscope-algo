@@ -37,7 +37,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     let r_pool = Arc::new(Mutex::new(pool));
     let r_args = Arc::new(Mutex::new(args));
 
-    let mut already_running = false;
+    let mut run_lock = Arc::new(Mutex::new(false));
 
     // main event loop
     loop {
@@ -53,17 +53,19 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                     "test2" => println!("test2 notif!"),
                     "generate" => {
                         println!("generate notif");
+                        let run_lock = run_lock.clone();
+                        tokio::spawn(async move {
+                        let mut already_running = *run_lock.lock().await;
                         if !already_running {
                             already_running = true;
-                            tokio::spawn(async move {
                                 let pool = r_pool.lock().await;
                                 let args = r_args.lock().await;
                                 render(&pool, &args).await.unwrap();
                                 already_running = false;
-                            });
-                        } else {
-                            println!("There is already a job running!");
-                        }
+                            } else {
+                                println!("There is already a job running!");
+                            }
+                        });
                     },
                     _ => {
                         println!("unknown channel notification ({})", ch)
