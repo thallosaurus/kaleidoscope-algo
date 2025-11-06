@@ -12,5 +12,5 @@ do
     -e PG_DB=${PG_DB} \
     -v /mnt/blender_nfs/tarascope:/media \
     -u $(id -u):$(id -g) \
-    tarascope-publisher --output-dir /media \
+    tarascope-publisher --output-dir /media
 done
