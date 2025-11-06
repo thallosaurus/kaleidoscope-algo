@@ -1,8 +1,8 @@
-use std::{env::var, error::Error};
+use std::error::Error;
 
 use clap::Parser;
 use clap_derive::Parser;
-use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
+use sqlx::{Pool, Postgres};
 use tarascope::{
     RenderStatus,
     encoder::stitch_video,

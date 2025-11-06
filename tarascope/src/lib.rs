@@ -1,11 +1,10 @@
 use std::{
-    cell::RefCell, fs::{File, create_dir}, io::{self, BufRead, BufReader, BufWriter, Write}, os::fd::AsRawFd, process::ExitStatus, rc::Rc, thread
+    cell::RefCell, fs::{File, create_dir}, io::{self, BufWriter, Write}, process::ExitStatus, rc::Rc
 };
 
-use command_fds::{CommandFdExt, FdMapping};
 use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
-use tokio::{process::Command, sync::mpsc::{Sender, UnboundedSender, unbounded_channel}};
+use tokio::{process::Command, sync::mpsc::UnboundedSender};
 
 use crate::{exec::run, shader::KaleidoArgs};
 pub mod encoder;

@@ -1,7 +1,4 @@
-use std::{
-    fs::File,
-    io::{Error, Write},
-};
+use std::io::Error;
 
 use clap::{Parser, command};
 use clap_derive::{Parser, Subcommand};

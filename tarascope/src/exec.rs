@@ -1,14 +1,13 @@
 use std::{
     process::{ExitStatus, Stdio},
     rc::Rc,
-    task::Context,
 };
 
 use command_fds::{CommandFdExt, FdMapping};
 use tokio::{
     fs::File,
     io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader},
-    net::unix::pipe::{self, Receiver},
+    net::unix::pipe::{self},
     process::Command,
     sync::{Mutex, mpsc::{UnboundedSender}},
 };
