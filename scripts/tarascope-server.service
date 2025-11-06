@@ -1,0 +1,14 @@
+[Unit]
+Description=Deno 1.1.1 service
+Documentation=http://deno.land
+Wants=network-online.target
+After=network-online.target
+[Service]
+Type=simple
+User=rillo
+WorkingDirectory=/home/rillo/kaleidoscope-algo
+ExecStart=cargo run --bin tarascope-server --output-dir /mnt/blender_nfs/taracope
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
