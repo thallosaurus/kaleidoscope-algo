@@ -8,7 +8,7 @@ RUN apt-get -y --no-install-recommends --fix-missing install \
 automake autoconf build-essential git libbz2-dev libegl1 libfontconfig1 libgl1 \
 libglvnd-dev libgtk-3-0 libsm6 libtool libx11-6 libx11-dev libxcursor1 libxext6 \
 libxext-dev libxi6 libxinerama1 libxkbcommon0 libxrandr2 libxrender1 libxxf86vm1 mesa-utils \
-pkg-config wget python3 python3-pip x11proto-dev x11proto-gl-dev xvfb curl xz-utils
+pkg-config wget python3 python3-pip x11proto-dev x11proto-gl-dev xvfb curl xz-utils ffmpeg
 
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
