@@ -2,18 +2,78 @@ use std::{env::var, error::Error};
 
 use clap::Parser;
 use clap_derive::Parser;
-use sqlx::postgres::PgPoolOptions;
+use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
 use tarascope::{
-    encoder::stitch_video, run_kaleidoscope, shader::{KaleidoArgs, OutputArgs}
+    RenderStatus,
+    encoder::stitch_video,
+    run_kaleidoscope,
+    shader::{KaleidoArgs, OutputArgs},
 };
+use tokio::sync::mpsc::unbounded_channel;
 
+use crate::database::init_database;
+
+pub mod database;
 
 /// Generate and store kaleidoscopes in postgres
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
     #[clap(flatten)]
-    out: OutputArgs
+    out: OutputArgs,
+}
+
+async fn register_new_kaleidoscope(
+    pool: &Pool<Postgres>,
+    id: String,
+    params: String,
+) -> Result<(), Box<dyn Error>> {
+    sqlx::query("INSERT INTO public.tarascope (id, parameters) VALUES (uuid($1), json($2))")
+        .bind(id)
+        .bind(params)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+async fn set_kaleidoscope_to_waiting(pool: &Pool<Postgres>, id: String) -> Result<(), Box<dyn Error>> {
+    sqlx::query("UPDATE public.tarascope SET status=1 WHERE id = uuid($1)")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+async fn set_kaleidoscope_to_running(pool: &Pool<Postgres>, id: String) -> Result<(), Box<dyn Error>> {
+    sqlx::query("UPDATE public.tarascope SET status=2 WHERE id = uuid($1)")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+async fn set_kaleidoscope_to_failed(pool: &Pool<Postgres>, id: String) -> Result<(), Box<dyn Error>> {
+    sqlx::query("UPDATE public.tarascope SET status=4 WHERE id = uuid($1)")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+async fn set_kaleidoscope_to_done(pool: &Pool<Postgres>, id: String) -> Result<(), Box<dyn Error>> {
+    sqlx::query("UPDATE public.tarascope SET status=3 WHERE id = uuid($1)")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+async fn insert_frame(pool: &Pool<Postgres>, update: RenderStatus) -> Result<(), Box<dyn Error>> {
+    sqlx::query("INSERT INTO public.frames (kaleidoid, frame_count) VALUES (uuid($1), $2)")
+        .bind(update.id)
+        .bind(update.frame)
+        .execute(pool)
+        .await?;
+    Ok(())
 }
 
 #[tokio::main]
@@ -21,32 +81,37 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     let _ = dotenv::dotenv().ok();
-    let host = var("PG_HOST").unwrap_or("localhost".to_string());
-    let username = var("PG_USER").unwrap_or("postgres".to_string());
-    let password = var("PG_PASS").unwrap_or("password".to_string());
-    let database = var("PG_DB").unwrap_or("postgres".to_string());
-    let connection_uri = format!("postgres://{}:{}@{}/{}", username, password, host, database);
+    let pool = init_database().await.unwrap();
 
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(connection_uri.as_str())
-        .await?;
+    let (sender, receiver) = unbounded_channel::<String>();
 
-    println!("Connection to Database successful");
-
-    println!("{}", args.out.output_dir);
     let kaleidoargs = KaleidoArgs::random(args.out);
-    let output = run_kaleidoscope(&kaleidoargs).await.unwrap();
+
+    // status task
+    let r_pool = pool.clone();
+    tokio::spawn(async move {
+        let mut receiver = receiver;
+        loop {
+            if let Some(msg) = receiver.recv().await {
+                println!("{:?}", msg);
+
+                let data: RenderStatus = serde_json::from_str(msg.as_str()).unwrap();
+                insert_frame(&r_pool, data).await.unwrap();
+                continue
+            } else {
+                break;
+            }
+        }
+    });
 
     let j = kaleidoargs.json();
+    register_new_kaleidoscope(&pool, kaleidoargs.get_id(), j.to_string()).await?;
+
+    let output = run_kaleidoscope(&kaleidoargs, sender).await?;
 
     if output.exit_status.success() {
         stitch_video(&kaleidoargs).unwrap();
-        sqlx::query("INSERT INTO public.tarascope (id, parameters) VALUES (uuid($1), $2)")
-            .bind(kaleidoargs.get_id())
-            .bind(j)
-            .execute(&pool)
-            .await?;
+        set_kaleidoscope_to_done(&pool, kaleidoargs.get_id()).await?;
     }
 
     Ok(())

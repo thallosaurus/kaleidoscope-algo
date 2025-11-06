@@ -3,7 +3,6 @@ import sys
 import bpy # type: ignore
 import base64
 import json
-import os
 #import psycopg2
 
 def decode_input_data(data):
@@ -55,7 +54,7 @@ def render_init(scene):
     
 def post_render(scene):
     global data
-    status = json.dumps({'id': data["id"] , 'status': scene.frame_current})
+    status = json.dumps({'id': data["id"] , 'frame': scene.frame_current})
     back_channel.write(status + "\n")
     back_channel.flush()
 

@@ -1,20 +1,16 @@
 use std::{
-    cell::RefCell,
-    fs::{File, create_dir},
-    io::{self, BufRead, BufReader, BufWriter, Write, pipe},
-    os::fd::AsRawFd,
-    process::{Command, ExitStatus, Stdio},
-    rc::Rc,
-    thread,
+    cell::RefCell, fs::{File, create_dir}, io::{self, BufRead, BufReader, BufWriter, Write, pipe}, os::fd::AsRawFd, process::ExitStatus, rc::Rc, thread
 };
 
 use command_fds::{CommandFdExt, FdMapping};
 use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
+use tokio::{process::Command, sync::mpsc::{Sender, UnboundedSender, unbounded_channel}};
 
-use crate::shader::KaleidoArgs;
+use crate::{exec::run, shader::KaleidoArgs};
 pub mod encoder;
 pub mod shader;
+mod exec;
 
 static BLEND_FILE: &[u8] = include_bytes!("../kaleido.blend");
 static PYTHON_LOADER: &[u8] = include_bytes!("../loader.py");
@@ -31,7 +27,7 @@ static BLENDER_PATH: &str = "C:\\Program Files\\Blender Foundation\\Blender\\ble
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RenderStatus {
     pub id: String,
-    pub status: u32,
+    pub frame: i32,
 }
 
 fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> {
@@ -44,7 +40,7 @@ fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> 
     Ok(blend_tmp)
 }
 
-pub async fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
+pub async fn run_kaleidoscope(args: &KaleidoArgs, sender: UnboundedSender<String>) -> io::Result<KaleidoOutput> {
     // Encode the parameters to base64
     let encoded = args.base64();
 
@@ -66,19 +62,9 @@ pub async fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
     let mut file = File::create(args.parameters_path())?;
     file.write_all(json.as_bytes())?;
 
-    // open process communication pipe
-    let (reader, writer) = pipe().unwrap();
-    let writer_fd = writer.as_raw_fd();
-
-    let mut child = match Command::new(BLENDER_PATH)
+    let mut cmd = Command::new(BLENDER_PATH);
+    cmd
         //.arg("kaleido.blend")
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .fd_mappings(vec![FdMapping {
-            parent_fd: writer.into(),
-            child_fd: 7,
-        }])
-        .unwrap()
         .arg(tmp_project_path.as_os_str())
         .arg("--factory-startup")
         .arg("--log-file")
@@ -98,77 +84,12 @@ pub async fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
         .arg("-b")
         .arg("-a")
         .arg("--")
-        .arg(format!("{}", writer_fd))
-        .arg(encoded)
-        .spawn()
-    {
-        Ok(child) => child,
-        Err(err) => panic!("error while spawning subprocess: {}", err),
-    };
-
+        .arg(encoded);
     // wait until the render has finished
     //let output = child.wait_with_output()?;
 
-    // Take stdout/stderr ownership
-    let stdout = child.stdout.take().unwrap();
-    let stderr = child.stderr.take().unwrap();
-
-    //let output_dir = format!("{}/{}", args.get_output_dir(), args.get_id());
-
-    // stdout reader
-    let stdout_path = args.blender_stdout_path();
-    let stdout_reader = thread::spawn(move || {
-        let mut log = File::create(stdout_path)
-            .expect("failed to create output log");
-        for line in BufReader::new(stdout).lines() {
-            let l = line.unwrap();
-            println!("{}", l);
-            log.write_all(l.as_bytes())
-                .expect("error writing to output log");
-        }
-    });
-
-    // stderr reader
-    let stderr_path = args.blender_stderr_path();
-    let stderr_reader = thread::spawn(move || {
-        let mut log_err = File::create(stderr_path)
-            .expect("failed to create output error log");
-        for line in BufReader::new(stderr).lines() {
-            let l = line.unwrap();
-            eprintln!("[stderr] {}", l);
-            log_err
-                .write_all(l.as_bytes())
-                .expect("error writing to output log");
-        }
-    });
-
-    let status_reader = thread::spawn(move || {
-        for line in BufReader::new(reader).lines() {
-            let l = line.unwrap();
-
-            let status = serde_json::from_str::<RenderStatus>(l.as_str()).unwrap();
-            println!("[status] {:?}", status);
-        }
-    });
-
-    status_reader.join().unwrap();
-    stdout_reader.join().unwrap();
-    stderr_reader.join().unwrap();
-
-    let output = child.wait()?;
-
-    // TODO write stdout
-    /*let mut log = File::create(format!("{}/{}/blender.stdout.log", args.get_output_dir(), args.get_id()))?;
-    log.write_all(&output.stdout)?;
-    log.flush()?;
-
-    // TODO write stderr
-    let mut log_err = File::create(format!("{}/{}/blender.stderr.log", args.get_output_dir(), args.get_id()))?;
-    log_err.write_all(&output.stderr)?;
-    log_err.flush()?;*/
-
-    //Ok(output.status)
-    Ok(KaleidoOutput::new(output, args.output_dir()))
+    let status = run(&mut cmd, args, sender).await?;
+    Ok(KaleidoOutput::new(status, args.output_dir()))
 }
 
 pub struct KaleidoOutput {
