@@ -1,6 +1,5 @@
 use std::{
-    process::{ExitStatus, Stdio},
-    rc::Rc,
+    process::{ExitStatus, Stdio}, sync::Arc,
 };
 
 use command_fds::{CommandFdExt, FdMapping};
@@ -17,7 +16,7 @@ use crate::shader::KaleidoArgs;
 pub async fn run(cmd: &mut Command, kargs: &KaleidoArgs, sender: UnboundedSender<String>) -> io::Result<ExitStatus> {
     let (writer, reader) = pipe::pipe()?;
 
-    let sender = Rc::new(Mutex::new(sender));
+    let sender = Arc::new(Mutex::new(sender));
 
     //attach fd mappings
     cmd.fd_mappings(vec![FdMapping {
@@ -80,7 +79,7 @@ pub async fn run(cmd: &mut Command, kargs: &KaleidoArgs, sender: UnboundedSender
         }
     });
 
-    let child = Rc::new(Mutex::new(ccmd));
+    let child = Arc::new(Mutex::new(ccmd));
 
     let mut status_reader = BufReader::new(reader);
     loop {

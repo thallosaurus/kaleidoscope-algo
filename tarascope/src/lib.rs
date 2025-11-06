@@ -1,10 +1,10 @@
 use std::{
-    cell::RefCell, fs::{File, create_dir}, io::{self, BufWriter, Write}, process::ExitStatus, rc::Rc
+    cell::RefCell, fs::{File, create_dir}, io::{self, BufWriter, Write}, process::ExitStatus, sync::Arc
 };
 
 use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
-use tokio::{process::Command, sync::mpsc::UnboundedSender};
+use tokio::{process::Command, sync::{Mutex, mpsc::UnboundedSender}};
 
 use crate::{exec::run, shader::KaleidoArgs};
 pub mod encoder;
@@ -29,10 +29,10 @@ pub struct RenderStatus {
     pub frame: i32,
 }
 
-fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> {
-    let blend_tmp = Rc::new(RefCell::new(NamedTempFile::new()?));
+fn extract_static_file(buffer: &[u8]) -> io::Result<Arc<Mutex<NamedTempFile>>> {
+    let mut blend_tmp = Arc::new(Mutex::new(NamedTempFile::new()?));
     {
-        let mut b = blend_tmp.borrow_mut();
+        let mut b = blend_tmp.try_lock().unwrap();
         let mut writer = BufWriter::new(b.as_file_mut());
         writer.write(buffer)?;
     }
@@ -45,12 +45,12 @@ pub async fn run_kaleidoscope(args: &KaleidoArgs, sender: UnboundedSender<String
 
     // extract Project File to a temporary location which gets dropped after the job is done
     let project_file = extract_static_file(BLEND_FILE)?;
-    let project_borrow = project_file.borrow_mut();
+    let project_borrow = project_file.try_lock().unwrap();
     let tmp_project_path = project_borrow.path();
 
     // same with the loader file
     let loader_file = extract_static_file(PYTHON_LOADER)?;
-    let loader_borrow = loader_file.borrow_mut();
+    let loader_borrow = loader_file.try_lock().unwrap();
     let tmp_loader_path = loader_borrow.path();
 
     // create the target project
