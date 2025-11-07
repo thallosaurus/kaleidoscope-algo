@@ -3,6 +3,8 @@ use rand::random_range;
 use serde::Serialize;
 use serde_json::{Value, json};
 
+use crate::shader::ParseError;
+
 #[derive(Parser, Debug, Clone, Serialize)]
 pub struct VoronoiArgs {
     #[arg(long)]
@@ -29,5 +31,13 @@ impl VoronoiArgs {
             "voronoi_detail": self.detail,
             "voronoi_randomize": self.randomize
         })
+    }
+
+    pub fn from_json(json: &Value) -> Result<Self, ParseError> {
+        let scale = json["voronoi_scale"].as_f64().expect("voronoi_scale was not a number") as f32;
+        let detail = json["voronoi_detail"].as_f64().expect("voronoi_detail was not a number") as f32;
+        let randomize = json["voronoi_randomize"].as_f64().expect("voronoi_randomize was not a number") as f32;
+
+        Ok(Self { scale, detail, randomize })
     }
 }

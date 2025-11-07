@@ -1,21 +1,40 @@
-use core::panic;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use clap_derive::{Parser, Subcommand};
+use core::panic;
+use std::fmt::Display;
 use rand::random_range;
 use serde::Serialize;
 use serde_json::{Value, json};
 use uuid::Uuid;
 
 use crate::shader::{
-    gabor::GaborArgs, magic::MagicArgs, noise::NoiseArgs, unoise::UnoiseArgs, voronoi::VoronoiArgs, wave::WaveArgs
+    gabor::GaborArgs, magic::MagicArgs, noise::NoiseArgs, unoise::UnoiseArgs, voronoi::VoronoiArgs,
+    wave::WaveArgs,
 };
 
 mod gabor;
 mod magic;
 mod noise;
+mod unoise;
 mod voronoi;
 mod wave;
-mod unoise;
+
+#[derive(Debug)]
+pub enum ParseError {
+    WrongType(String),
+    WrongTextureIndex(u8),
+}
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParseError::WrongType(key) => {
+                write!(f, "{} was not a number", key)
+            },
+            ParseError::WrongTextureIndex(index) => write!(f, "unknown index texture {}", index),
+        }
+    }
+}
 
 #[derive(Debug, Parser, Clone, Serialize)]
 pub struct KaleidoArgs {
@@ -39,7 +58,7 @@ pub struct KaleidoArgs {
     output: OutputArgs,
 
     #[arg(short, long)]
-    animate: bool
+    animate: bool,
 }
 
 impl KaleidoArgs {
@@ -52,7 +71,7 @@ impl KaleidoArgs {
             frames: FrameArgs::default(),
             id: Uuid::new_v4().to_string(),
             output: output_dir,
-            animate: false
+            animate: false,
         }
     }
 
@@ -68,6 +87,29 @@ impl KaleidoArgs {
             "texture": self.texture.json(),
             "composite": self.composite.json(),
             "frames": self.frames.json()
+        })
+    }
+
+    pub fn from_json(v: Value) -> Result<Self, ParseError> {
+        let repetition = parse_u64(&v, "repetition".to_string())? as u8;
+        let scaling = parse_f64(&v, "scaling".to_string())? as f32;
+        let rotation = parse_f64(&v, "rotation".to_string())? as f32;
+        let pingpong = parse_f64(&v, "pingpong".to_string())? as f32;
+        let id = parse_string(&v, "id".to_string())?;
+
+        Ok(Self {
+            id,
+            texture: TextureSelector::from_json(&v)?,
+            polar: PolarArgs {
+                repetition,
+                scaling,
+                rotation,
+                pingpong,
+            },
+            composite: CompositeArgs::from_json(&v["composite"])?,
+            frames: FrameArgs::from_json(&v["frames"])?,
+            output: OutputArgs { output_dir: String::from("joa") },
+            animate: true,
         })
     }
 
@@ -99,15 +141,15 @@ impl KaleidoArgs {
     pub fn blender_stdout_path(&self) -> String {
         format!("{}/blender.stdout.log", self.project_folder_path())
     }
-    
+
     pub fn blender_stderr_path(&self) -> String {
         format!("{}/blender.stderr.log", self.project_folder_path())
     }
-    
+
     pub fn parameters_path(&self) -> String {
         format!("{}/parameters.json", self.project_folder_path())
     }
-    
+
     pub fn blender_project_path(&self) -> String {
         format!("{}/project.blend", self.project_folder_path())
     }
@@ -208,9 +250,49 @@ impl TextureSelector {
             TextureSelector::Textured(textured_args) => textured_args.json(),
         }
     }
+
+    fn from_json(v: &Value) -> Result<Self, ParseError> {
+        let index = parse_u64(v, "texture_index".to_string())? as u8;
+        let texture = v["texture"].clone();
+
+        match index {
+            0 => {
+                let args = GaborArgs::from_json(&texture)?;
+                Ok(TextureSelector::Gabor(args))
+            },
+            1 => {
+                let args = VoronoiArgs::from_json(&texture)?;
+                Ok(TextureSelector::Voronoi(args))
+            },
+            2 => {
+                let args = WaveArgs::from_json(&texture)?;
+                Ok(TextureSelector::Wave(args))
+            },
+            3 => {
+                let args = MagicArgs::from_json(&texture)?;
+                Ok(TextureSelector::Magic(args))
+            },
+            4 => {
+                let args = NoiseArgs::from_json(&texture)?;
+                Ok(TextureSelector::Noise(args))
+            },
+            5 => {
+                let args = UnoiseArgs::from_json(&texture)?;
+                Ok(TextureSelector::Unoise(args))
+            },
+            6 => {
+                let args = TexturedArgs::from_json(&texture)?;
+                Ok(TextureSelector::Textured(args))
+            },
+            _ => {
+                Err(ParseError::WrongTextureIndex(index))
+            }
+        }
+    }
 }
 
 impl From<u8> for TextureSelector {
+    ///
     fn from(value: u8) -> Self {
         match value {
             0 => TextureSelector::Gabor(GaborArgs::random()),
@@ -232,12 +314,12 @@ struct CompositeArgs {
 
     #[arg(long)]
     lens_dispersion: f32,
-    
+
     #[arg(long)]
     hue: f32,
 
     #[arg(long)]
-    saturation: f32
+    saturation: f32,
 }
 
 impl CompositeArgs {
@@ -247,7 +329,6 @@ impl CompositeArgs {
             lens_dispersion: random_range(-1.0..=-0.5),
             hue: random_range(0.0..=1.0),
             saturation: random_range(1.0..=2.0),
-            
         }
     }
     fn json(&self) -> Value {
@@ -258,17 +339,55 @@ impl CompositeArgs {
             "composite_saturation": self.saturation
         })
     }
+
+    fn from_json(json: &Value) -> Result<Self, ParseError> {
+        let hue = json["composite_hue"].as_f64().expect("composite_hue was not a number") as f32;
+        let lens_dispersion = json["composite_lens_dispersion"].as_f64().expect("composite_lens_dispersion was not a number") as f32;
+        let lens_distortion = json["composite_lens_distortion"].as_f64().expect("composite_lens_distortion was not a number") as f32;
+        let saturation = json["composite_saturation"].as_f64().expect("composite_saturation was not a number") as f32;
+        Ok(Self {
+            lens_distortion,
+            lens_dispersion,
+            hue,
+            saturation,
+        })
+    }
+}
+
+fn parse_u64(v: &Value, key: String) -> Result<u64, ParseError> {
+    let value = v[key.clone()].as_u64();
+    if let Some(value) = value {
+        Ok(value)
+    } else {
+        Err(ParseError::WrongType(key))
+    }
+}
+fn parse_f64(v: &Value, key: String) -> Result<f64, ParseError> {
+    let value = v[key.clone()].as_f64();
+    if let Some(value) = value {
+        Ok(value)
+    } else {
+        Err(ParseError::WrongType(key))
+    }
+}
+fn parse_string(v: &Value, key: String) -> Result<String, ParseError> {
+    let value = v[key.clone()].as_str();
+    if let Some(value) = value {
+        Ok(String::from(value))
+    } else {
+        Err(ParseError::WrongType(key))
+    }
 }
 
 #[derive(Parser, Debug, Clone, Serialize)]
 struct TexturedArgs {
-    file_path: String
+    file_path: String,
 }
 
 impl TexturedArgs {
     pub fn random() -> Self {
         Self {
-            file_path: String::from("path goes here")
+            file_path: String::from("path goes here"),
         }
     }
 
@@ -277,14 +396,21 @@ impl TexturedArgs {
             "file_path": self.file_path
         })
     }
+
+    pub fn from_json(json: &Value) -> Result<Self, ParseError> {
+        
+        let file_path = String::from(json["file_path"].as_str().expect("file_path was not a number"));
+
+        Ok(Self { file_path })
+    }
 }
 #[derive(Parser, Debug, Clone, Serialize)]
 struct FrameArgs {
     #[arg(long)]
     frame_start: u16,
-    
+
     #[arg(long)]
-    frame_end: u16
+    frame_end: u16,
 }
 
 impl FrameArgs {
@@ -294,11 +420,21 @@ impl FrameArgs {
             "_frames_max": self.frame_end
         })
     }
+
+    pub fn from_json(v: &Value) -> Result<Self, ParseError> {
+        let frame_start = parse_u64(v, "_frames_start".to_string())? as u16;
+        let frame_end = parse_u64(v, "_frames_max".to_string())? as u16;
+
+        Ok(Self { frame_start, frame_end })
+    }
 }
 
 impl Default for FrameArgs {
     fn default() -> Self {
-        Self { frame_start: 1, frame_end: 300 }
+        Self {
+            frame_start: 1,
+            frame_end: 300,
+        }
     }
 }
 
