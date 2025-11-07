@@ -1,12 +1,14 @@
 use std::error::Error;
 
-use daemon::database::{init_database, trigger_generation};
+use clap::Parser;
+use daemon::database::{init_database, insert_new_parameterized_job, trigger_generation};
 use tarascope::shader::KaleidoArgs;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let _ = dotenv::dotenv().ok();
+    let kargs = KaleidoArgs::parse();
     
     let pool = init_database().await?;
-    Ok(trigger_generation(&pool).await?)
+    Ok(insert_new_parameterized_job(&pool, kargs).await?)
 }

@@ -1,7 +1,8 @@
-use std::{error::Error, rc::Rc, sync::Arc};
+use std::{cell::LazyCell, env::current_dir, error::Error, rc::Rc, sync::{Arc, LazyLock, OnceLock}};
 
 use clap::Parser;
 use clap_derive::Parser;
+use serde_json::to_string;
 use sqlx::{Pool, Postgres, postgres::PgListener};
 use tarascope::{
     RenderStatus,
@@ -15,15 +16,29 @@ use tokio::sync::{
 };
 
 use crate::database::{
-    init_database, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done,
+    get_specific_job_parameters, init_database, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done
 };
 
 pub mod database;
 
 static MAX_QUEUE_ITEMS: usize = 1;
+static OUTPUT_DIR: OnceLock<String> = OnceLock::new();
+fn set_cwd() {
+    println!("Setting CWD");
+    let cwd = current_dir().expect("no current working directory");
+    let path = cwd.to_string_lossy().to_string();
+    OUTPUT_DIR.set(path).unwrap_or_else(|_| {
+        eprintln!("CWD is already set");
+    });
+}
+
+fn get_cwd() -> &'static str {
+    OUTPUT_DIR.get().expect("CWD is not set")
+}
 
 enum RenderQueueRequest {
     Random,
+    Parameterized(String)
 }
 
 /// Generate and store kaleidoscopes in postgres
@@ -45,6 +60,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     listener.listen("test").await?;
     listener.listen("test2").await?;
     listener.listen("generate_random").await?;
+    listener.listen("queue_parameter").await?;
 
     let r_pool = Arc::new(Mutex::new(pool));
     let r_args = Arc::new(Mutex::new(args));
@@ -58,15 +74,21 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
         let args = r_args.clone();
         loop {
             if let Some(req) = rx.recv().await {
+                let pool = pool.lock().await;
+                let args = args.lock().await;
                 match req {
                     RenderQueueRequest::Random => {
                         println!("Starting new random job");
-                        let pool = pool.lock().await;
-                        let args = args.lock().await;
-                        render(&pool, &args).await.unwrap();
+                        let job = KaleidoArgs::random(String::from(get_cwd()));
+                        render(&pool, &job).await.unwrap();
                         //tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                         println!("Finished Render Job");
                     }
+                    RenderQueueRequest::Parameterized(id) => {
+                        let job = get_specific_job_parameters(&pool, id).await;
+                        println!("{:?}", job);
+                        //println!("Starting new parameterized job {}", id);
+                    },
                 }
             } else {
                 println!("queue closed");
@@ -84,6 +106,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                 // got notification
 
                 let ch = msg.channel();
+                let data = msg.payload();
                 match ch {
                     "test" => println!("test notif!"),
                     "test2" => println!("test2 notif!"),
@@ -98,6 +121,14 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                             println!("queued next random generation");
                         }
                     },
+                    "queue_parameter" =>  {
+                        if let Err(e) = tx.try_send(RenderQueueRequest::Parameterized(String::from(data))) {
+                            eprintln!("render queue is full {}", e);
+                            continue;
+                        } else {
+                            println!("queued next parameterized generation");
+                        }
+                    },
                     _ => {
                         println!("unknown channel notification ({})", ch)
                     }
@@ -107,13 +138,9 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     }
 }
 
-async fn render(pool: &Pool<Postgres>, args: &Args) -> Result<(), Box<dyn Error>> {
+async fn render(pool: &Pool<Postgres>, kaleidoargs: &KaleidoArgs) -> Result<(), Box<dyn Error>> {
     //let pool = init_database().await.unwrap();
     let (sender, receiver) = unbounded_channel::<String>();
-
-    //let out = args.out.clone();
-
-    let kaleidoargs = KaleidoArgs::random(args.out.clone());
 
     // status task
     let p = pool.clone();
@@ -133,7 +160,8 @@ async fn render(pool: &Pool<Postgres>, args: &Args) -> Result<(), Box<dyn Error>
     });
 
     let j = kaleidoargs.json();
-    register_new_kaleidoscope(&pool, kaleidoargs.get_id(), j.to_string()).await?;
+    let id = kaleidoargs.get_id();
+    register_new_kaleidoscope(&pool, &id, j.to_string()).await?;
 
     let output = run_kaleidoscope(&kaleidoargs, sender).await?;
 

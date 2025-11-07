@@ -1,7 +1,8 @@
 use std::{env::var, error::Error};
 
-use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
-use tarascope::RenderStatus;
+use serde_json::Value;
+use sqlx::{Pool, Postgres, postgres::PgPoolOptions, types::{Json, JsonRawValue}};
+use tarascope::{RenderStatus, shader::KaleidoArgs};
 
 pub async fn init_database() -> Result<Pool<Postgres>, Box<dyn Error>> {
     let host = var("PG_HOST").unwrap_or("localhost".to_string());
@@ -26,7 +27,7 @@ pub async fn trigger_generation(pool: &Pool<Postgres>) -> Result<(), Box<dyn Err
 
 pub async fn register_new_kaleidoscope(
     pool: &Pool<Postgres>,
-    id: String,
+    id: &String,
     params: String,
 ) -> Result<(), Box<dyn Error>> {
     sqlx::query("INSERT INTO public.tarascope (id, parameters) VALUES (uuid($1), json($2))")
@@ -90,4 +91,30 @@ pub async fn insert_frame(
         .execute(pool)
         .await?;
     Ok(())
+}
+
+pub async fn insert_new_parameterized_job(
+    pool: &Pool<Postgres>,
+    kargs: KaleidoArgs,
+) -> Result<(), Box<dyn Error>> {
+    let id = kargs.get_id();
+    register_new_kaleidoscope(pool, &id, kargs.json().to_string()).await?;
+
+    sqlx::query("SELECT pg_notify('queue_parameter', $1)")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn get_specific_job_parameters(
+        pool: &Pool<Postgres>,
+        id: String
+) -> Result<KaleidoArgs, Box<dyn Error>> {
+    let q: (String,) = sqlx::query_as("SELECT parameters::text FROM tarascope WHERE id = uuid($1)")
+        .bind(id)
+        .fetch_one(pool)
+        .await?;
+
+    Ok(KaleidoArgs::from_json(q.0.into()).unwrap())
 }

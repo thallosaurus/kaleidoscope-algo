@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 use clap_derive::Parser;
 use rand::random_range;
 use serde::Serialize;
@@ -17,12 +19,24 @@ pub struct MagicArgs {
     dist: f32,
 }
 
+fn depth_range() -> RangeInclusive<u8> {
+    0..=10
+}
+
+fn scale_range() -> RangeInclusive<f32> {
+    0.0..=5.0
+}
+
+fn distortion_range() -> RangeInclusive<f32> {
+    0.0..=5.0
+}
+
 impl MagicArgs {
     pub fn random() -> Self {
         Self {
-            depth: random_range(0..=10),
-            scale: random_range(0.0..=5.0),
-            dist: random_range(0.0..=5.0),
+            depth: random_range(depth_range()),
+            scale: random_range(scale_range()),
+            dist: random_range(distortion_range()),
         }
     }
 
@@ -35,9 +49,9 @@ impl MagicArgs {
     }
 
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
-        let depth = parse_u64(v, "magic_depth".to_string())? as u8;
-        let scale = parse_f64(v, "magic_scale".to_string())? as f32;
-        let dist = parse_f64(v, "magic_distortion".to_string())? as f32;
+        let depth = parse_u64(v, "magic_depth")? as u8;
+        let scale = parse_f64(v, "magic_scale")? as f32;
+        let dist = parse_f64(v, "magic_distortion")? as f32;
 
         Ok(Self { depth, scale, dist })
     }

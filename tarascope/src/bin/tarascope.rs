@@ -33,7 +33,7 @@ async fn main() -> Result<(), Error> {
     let (sender, receiver) = unbounded_channel();
 
     let kargs = match args.mode {
-        CliModes::Random(output_args) => KaleidoArgs::random(output_args),
+        CliModes::Random(output_args) => KaleidoArgs::random(output_args.output_dir),
         CliModes::Custom(kaleido_args) => kaleido_args,
     };
 

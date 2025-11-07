@@ -1,10 +1,10 @@
 use base64::{Engine, prelude::BASE64_STANDARD};
 use clap_derive::{Parser, Subcommand};
 use core::panic;
-use std::fmt::Display;
 use rand::random_range;
 use serde::Serialize;
 use serde_json::{Value, json};
+use std::{fmt::Display, ops::{RangeBounds, RangeInclusive}};
 use uuid::Uuid;
 
 use crate::shader::{
@@ -30,7 +30,7 @@ impl Display for ParseError {
         match self {
             ParseError::WrongType(key) => {
                 write!(f, "{} was not a number", key)
-            },
+            }
             ParseError::WrongTextureIndex(index) => write!(f, "unknown index texture {}", index),
         }
     }
@@ -62,15 +62,15 @@ pub struct KaleidoArgs {
 }
 
 impl KaleidoArgs {
-    pub fn random(output_dir: OutputArgs) -> Self {
-        println!("[DEBUG] {}", output_dir.output_dir);
+    pub fn random(output_dir: String) -> Self {
+        println!("[DEBUG] {}", output_dir);
         Self {
             texture: TextureSelector::random(),
             polar: PolarArgs::random(),
             composite: CompositeArgs::random(),
             frames: FrameArgs::default(),
             id: Uuid::new_v4().to_string(),
-            output: output_dir,
+            output: OutputArgs { output_dir },
             animate: false,
         }
     }
@@ -91,11 +91,11 @@ impl KaleidoArgs {
     }
 
     pub fn from_json(v: Value) -> Result<Self, ParseError> {
-        let repetition = parse_u64(&v, "repetition".to_string())? as u8;
-        let scaling = parse_f64(&v, "scaling".to_string())? as f32;
-        let rotation = parse_f64(&v, "rotation".to_string())? as f32;
-        let pingpong = parse_f64(&v, "pingpong".to_string())? as f32;
-        let id = parse_string(&v, "id".to_string())?;
+        let repetition = parse_u64(&v, "repetition")? as u8;
+        let scaling = parse_f64(&v, "scaling")? as f32;
+        let rotation = parse_f64(&v, "rotation")? as f32;
+        let pingpong = parse_f64(&v, "pingpong")? as f32;
+        let id = parse_string(&v, "id")?;
 
         Ok(Self {
             id,
@@ -108,7 +108,9 @@ impl KaleidoArgs {
             },
             composite: CompositeArgs::from_json(&v["composite"])?,
             frames: FrameArgs::from_json(&v["frames"])?,
-            output: OutputArgs { output_dir: String::from("joa") },
+            output: OutputArgs {
+                output_dir: String::new(),
+            },
             animate: true,
         })
     }
@@ -163,6 +165,20 @@ impl KaleidoArgs {
     }
 }
 
+fn repetition_range() -> RangeInclusive<u8> {
+    3..=12
+}
+
+fn scaling_range() -> RangeInclusive<f32> {
+    2.5..=12.0
+}
+fn rotation_range() -> RangeInclusive<f32> {
+    0.0..=360.0
+}
+fn pingpong_range() -> RangeInclusive<f32> {
+    0.5..=4.5
+}
+
 #[derive(Debug, Parser, Clone, Serialize)]
 struct PolarArgs {
     /// Specifies how many Repetitions the kaleidoscope has (3 - 12)
@@ -185,11 +201,11 @@ struct PolarArgs {
 impl PolarArgs {
     pub fn random() -> Self {
         Self {
-            repetition: random_range(3..=12),
-            scaling: random_range(2.5..=12.0),
+            repetition: random_range(repetition_range()),
+            scaling: random_range(scaling_range()),
             //rotation: random_range(0.0..=360.0),
             rotation: 0.0,
-            pingpong: random_range(0.5..=4.5),
+            pingpong: random_range(pingpong_range()),
         }
     }
 }
@@ -224,7 +240,17 @@ impl TextureSelector {
         // 6 = with uNoise
         // 7 = with Textured
         let r = random_range(0..=4);
-        Self::from(r)
+        //Self::from(r)
+        match r {
+            0 => TextureSelector::Gabor(GaborArgs::random()),
+            1 => TextureSelector::Voronoi(VoronoiArgs::random()),
+            2 => TextureSelector::Wave(WaveArgs::random()),
+            3 => TextureSelector::Magic(MagicArgs::random()),
+            4 => TextureSelector::Noise(NoiseArgs::random()),
+            5 => TextureSelector::Unoise(UnoiseArgs::random()),
+            6 => TextureSelector::Textured(TexturedArgs::random()),
+            _ => panic!("invalid texture index"),
+        }
     }
 
     fn get_index(&self) -> u8 {
@@ -252,47 +278,44 @@ impl TextureSelector {
     }
 
     fn from_json(v: &Value) -> Result<Self, ParseError> {
-        let index = parse_u64(v, "texture_index".to_string())? as u8;
+        let index = parse_u64(v, "texture_index")? as u8;
         let texture = v["texture"].clone();
 
         match index {
             0 => {
                 let args = GaborArgs::from_json(&texture)?;
                 Ok(TextureSelector::Gabor(args))
-            },
+            }
             1 => {
                 let args = VoronoiArgs::from_json(&texture)?;
                 Ok(TextureSelector::Voronoi(args))
-            },
+            }
             2 => {
                 let args = WaveArgs::from_json(&texture)?;
                 Ok(TextureSelector::Wave(args))
-            },
+            }
             3 => {
                 let args = MagicArgs::from_json(&texture)?;
                 Ok(TextureSelector::Magic(args))
-            },
+            }
             4 => {
                 let args = NoiseArgs::from_json(&texture)?;
                 Ok(TextureSelector::Noise(args))
-            },
+            }
             5 => {
                 let args = UnoiseArgs::from_json(&texture)?;
                 Ok(TextureSelector::Unoise(args))
-            },
+            }
             6 => {
                 let args = TexturedArgs::from_json(&texture)?;
                 Ok(TextureSelector::Textured(args))
-            },
-            _ => {
-                Err(ParseError::WrongTextureIndex(index))
             }
+            _ => Err(ParseError::WrongTextureIndex(index)),
         }
     }
 }
 
-impl From<u8> for TextureSelector {
-    ///
+/*impl From<u8> for TextureSelector {
     fn from(value: u8) -> Self {
         match value {
             0 => TextureSelector::Gabor(GaborArgs::random()),
@@ -305,7 +328,7 @@ impl From<u8> for TextureSelector {
             _ => panic!("invalid texture index"),
         }
     }
-}
+}*/
 
 #[derive(Debug, Parser, Clone, Serialize)]
 struct CompositeArgs {
@@ -322,13 +345,26 @@ struct CompositeArgs {
     saturation: f32,
 }
 
+fn lens_distortion_range() -> RangeInclusive<f32> {
+    -1.0..=-0.5
+}
+fn lens_dispersion_range() -> RangeInclusive<f32> {
+    -1.0..=-0.5
+}
+fn hue_range() -> RangeInclusive<f32> {
+    0.0..=1.0
+}
+fn saturation_range() -> RangeInclusive<f32> {
+    1.0..=2.0
+}
+
 impl CompositeArgs {
     fn random() -> Self {
         Self {
-            lens_distortion: random_range(-1.0..=-0.5),
-            lens_dispersion: random_range(-1.0..=-0.5),
-            hue: random_range(0.0..=1.0),
-            saturation: random_range(1.0..=2.0),
+            lens_distortion: random_range(lens_distortion_range()),
+            lens_dispersion: random_range(lens_dispersion_range()),
+            hue: random_range(hue_range()),
+            saturation: random_range(saturation_range()),
         }
     }
     fn json(&self) -> Value {
@@ -341,10 +377,21 @@ impl CompositeArgs {
     }
 
     fn from_json(json: &Value) -> Result<Self, ParseError> {
-        let hue = json["composite_hue"].as_f64().expect("composite_hue was not a number") as f32;
-        let lens_dispersion = json["composite_lens_dispersion"].as_f64().expect("composite_lens_dispersion was not a number") as f32;
-        let lens_distortion = json["composite_lens_distortion"].as_f64().expect("composite_lens_distortion was not a number") as f32;
-        let saturation = json["composite_saturation"].as_f64().expect("composite_saturation was not a number") as f32;
+        let hue = json["composite_hue"]
+            .as_f64()
+            .expect("composite_hue was not a number") as f32;
+
+        let lens_dispersion = json["composite_lens_dispersion"]
+            .as_f64()
+            .expect("composite_lens_dispersion was not a number")
+            as f32;
+        let lens_distortion = json["composite_lens_distortion"]
+            .as_f64()
+            .expect("composite_lens_distortion was not a number")
+            as f32;
+        let saturation = json["composite_saturation"]
+            .as_f64()
+            .expect("composite_saturation was not a number") as f32;
         Ok(Self {
             lens_distortion,
             lens_dispersion,
@@ -354,28 +401,43 @@ impl CompositeArgs {
     }
 }
 
-fn parse_u64(v: &Value, key: String) -> Result<u64, ParseError> {
-    let value = v[key.clone()].as_u64();
+fn validate_range<T>(value: T, range: std::ops::RangeInclusive<T>, key: &str) -> Result<T, ParseError>
+where
+    T: PartialOrd + Copy + std::fmt::Debug,
+{
+    if range.contains(&value) {
+        Ok(value)
+    } else {
+        Err(ParseError::WrongType(format!(
+            "{} was out of range: {:?} not in {:?}",
+            key, value, range
+        )))
+    }
+}
+
+fn parse_u64(v: &Value, key: &'static str) -> Result<u64, ParseError>
+{
+    let value = v[key].as_u64();
     if let Some(value) = value {
         Ok(value)
     } else {
-        Err(ParseError::WrongType(key))
+        Err(ParseError::WrongType(String::from(key)))
     }
 }
-fn parse_f64(v: &Value, key: String) -> Result<f64, ParseError> {
-    let value = v[key.clone()].as_f64();
+fn parse_f64(v: &Value, key: &'static str) -> Result<f64, ParseError> {
+    let value = v[key].as_f64();
     if let Some(value) = value {
         Ok(value)
     } else {
-        Err(ParseError::WrongType(key))
+        Err(ParseError::WrongType(String::from(key)))
     }
 }
-fn parse_string(v: &Value, key: String) -> Result<String, ParseError> {
-    let value = v[key.clone()].as_str();
+fn parse_string(v: &Value, key: &'static str) -> Result<String, ParseError> {
+    let value = v[key].as_str();
     if let Some(value) = value {
         Ok(String::from(value))
     } else {
-        Err(ParseError::WrongType(key))
+        Err(ParseError::WrongType(String::from(key)))
     }
 }
 
@@ -398,8 +460,11 @@ impl TexturedArgs {
     }
 
     pub fn from_json(json: &Value) -> Result<Self, ParseError> {
-        
-        let file_path = String::from(json["file_path"].as_str().expect("file_path was not a number"));
+        let file_path = String::from(
+            json["file_path"]
+                .as_str()
+                .expect("file_path was not a number"),
+        );
 
         Ok(Self { file_path })
     }
@@ -422,10 +487,13 @@ impl FrameArgs {
     }
 
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
-        let frame_start = parse_u64(v, "_frames_start".to_string())? as u16;
-        let frame_end = parse_u64(v, "_frames_max".to_string())? as u16;
+        let frame_start = parse_u64(v, "_frames_start")? as u16;
+        let frame_end = parse_u64(v, "_frames_max")? as u16;
 
-        Ok(Self { frame_start, frame_end })
+        Ok(Self {
+            frame_start,
+            frame_end,
+        })
     }
 }
 

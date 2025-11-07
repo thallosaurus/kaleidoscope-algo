@@ -1,3 +1,5 @@
+use std::ops::RangeInclusive;
+
 use clap_derive::Parser;
 use rand::random_range;
 use serde::Serialize;
@@ -20,13 +22,26 @@ pub struct GaborArgs {
     orientation: f32,
 }
 
+fn scale_range() -> RangeInclusive<f32> {
+    0.0..=20.0
+}
+fn frequency_range() -> RangeInclusive<f32> {
+    0.0..=20.0
+}
+fn anisotropy_range() -> RangeInclusive<f32> {
+    0.0..=1.0
+}
+fn orientation_range() -> RangeInclusive<f32> {
+    0.0..=360.0
+}
+
 impl GaborArgs {
     pub fn random() -> Self {
         Self {
-            scale: random_range(0.0..=20.0),
-            frequency: random_range(0.0..=20.0),
-            anisotropy: random_range(0.0..=1.0),
-            orientation: random_range(0.0..=360.0),
+            scale: random_range(scale_range()),
+            frequency: random_range(frequency_range()),
+            anisotropy: random_range(anisotropy_range()),
+            orientation: random_range(orientation_range()),
         }
     }
 
@@ -40,10 +55,10 @@ impl GaborArgs {
     }
 
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
-        let scale = parse_f64(v, "gabor_scale".to_string())? as f32;
-        let anisotropy = parse_f64(v, "gabor_anisotropy".to_string())? as f32;
-        let orientation = parse_f64(v, "gabor_orientation".to_string())? as f32;
-        let frequency = parse_f64(v, "gabor_frequency".to_string())? as f32;
+        let scale = parse_f64(v, "gabor_scale")? as f32;
+        let anisotropy = parse_f64(v, "gabor_anisotropy")? as f32;
+        let orientation = parse_f64(v, "gabor_orientation")? as f32;
+        let frequency = parse_f64(v, "gabor_frequency")? as f32;
 
         Ok(Self { scale, frequency, anisotropy, orientation })
     }

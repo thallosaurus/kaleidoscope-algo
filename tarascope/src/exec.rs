@@ -14,6 +14,11 @@ use tokio::{
 
 use crate::shader::KaleidoArgs;
 
+struct RenderExecutor {
+    
+}
+
+/// Runs the blender executor
 pub async fn run(
     cmd: &mut Command,
     kargs: &KaleidoArgs,
