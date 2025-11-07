@@ -6,8 +6,8 @@ After=network-online.target
 [Service]
 Type=simple
 User=rillo
-WorkingDirectory=/home/rillo/kaleidoscope-algo
-ExecStart=/home/rillo/kaleidoscope-algo/target/release/tarascope-server --output-dir /mnt/blender_nfs/tarascope
+WorkingDirectory=/opt/tarascope
+ExecStart=/opt/tarascope/target/release/tarascope-server --output-dir /mnt/blender_nfs/tarascope
 ExecStop=/bin/kill -HUP $MAINPID
 #PIDFile=/r/blah/blah.pid
 Restart=on-failure
