@@ -5,7 +5,7 @@ use rand::random_range;
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use crate::shader::{ParseError, parse_f64};
+use crate::shader::{ParseError, parse_f64, validate_range};
 
 #[derive(Parser, Debug, Clone, Serialize)]
 pub struct GaborArgs {
@@ -55,10 +55,10 @@ impl GaborArgs {
     }
 
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
-        let scale = parse_f64(v, "gabor_scale")? as f32;
-        let anisotropy = parse_f64(v, "gabor_anisotropy")? as f32;
-        let orientation = parse_f64(v, "gabor_orientation")? as f32;
-        let frequency = parse_f64(v, "gabor_frequency")? as f32;
+        let scale = validate_range(parse_f64(v, "gabor_scale")? as f32, scale_range())?;
+        let anisotropy = validate_range(parse_f64(v, "gabor_anisotropy")? as f32, scale_range())?;
+        let orientation = validate_range(parse_f64(v, "gabor_orientation")? as f32, scale_range())?;
+        let frequency = validate_range(parse_f64(v, "gabor_frequency")? as f32, scale_range())?;
 
         Ok(Self { scale, frequency, anisotropy, orientation })
     }

@@ -5,7 +5,7 @@ use rand::random_range;
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use crate::shader::{ParseError, parse_f64};
+use crate::shader::{ParseError, parse_f64, validate_range};
 
 #[derive(Parser, Debug, Clone, Serialize)]
 pub struct WaveArgs {
@@ -62,11 +62,11 @@ impl WaveArgs {
     }
 
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
-        let detail = parse_f64(v, "wave_detail")? as f32;
-        let scale = parse_f64(v, "wave_scale")? as f32;
-        let distortion = parse_f64(v, "wave_distortion")? as f32;
-        let detail_roughness = parse_f64(v, "wave_detail_roughness")? as f32;
-        let phase_offset = parse_f64(v, "wave_phase_offset")? as f32;
+        let detail = validate_range(parse_f64(v, "wave_detail")? as f32, scale_range())?;
+        let scale = validate_range(parse_f64(v, "wave_scale")? as f32, scale_range())?;
+        let distortion = validate_range(parse_f64(v, "wave_distortion")? as f32, scale_range())?;
+        let detail_roughness = validate_range(parse_f64(v, "wave_detail_roughness")? as f32, scale_range())?;
+        let phase_offset = validate_range(parse_f64(v, "wave_phase_offset")? as f32, scale_range())?;
 
         Ok(Self {
             scale,

@@ -5,7 +5,7 @@ use rand::random_range;
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use crate::shader::{ParseError, parse_f64, parse_u64};
+use crate::shader::{ParseError, parse_f64, parse_u64, validate_range};
 
 #[derive(Parser, Debug, Clone, Serialize)]
 pub struct MagicArgs {
@@ -49,9 +49,9 @@ impl MagicArgs {
     }
 
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
-        let depth = parse_u64(v, "magic_depth")? as u8;
-        let scale = parse_f64(v, "magic_scale")? as f32;
-        let dist = parse_f64(v, "magic_distortion")? as f32;
+        let depth = validate_range(parse_u64(v, "magic_depth")? as u8, depth_range())?;
+        let scale = validate_range(parse_f64(v, "magic_scale")? as f32, scale_range())?;
+        let dist = validate_range(parse_f64(v, "magic_distortion")? as f32, scale_range())?;
 
         Ok(Self { depth, scale, dist })
     }

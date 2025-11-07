@@ -5,7 +5,7 @@ use rand::random_range;
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use crate::shader::{ParseError, parse_f64};
+use crate::shader::{ParseError, parse_f64, validate_range};
 
 #[derive(Parser, Debug, Clone, Serialize)]
 pub struct UnoiseArgs {
@@ -55,11 +55,18 @@ impl UnoiseArgs {
     }
 
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
-        let scale = parse_f64(v, "unoise_scale")? as f32;
-        let detail = parse_f64(v, "unoise_detail")? as f32;
-        let roughness = parse_f64(v, "unoise_roughness")? as f32;
-        let lacunarity = parse_f64(v, "unoise_lacunarity")? as f32;
-        let distortion = parse_f64(v, "unoise_distortion")? as f32;
+        let scale = validate_range(parse_f64(v, "unoise_scale")? as f32, scale_range())?;
+        let detail = validate_range(parse_f64(v, "unoise_detail")? as f32, detail_range())?;
+        let roughness =
+            validate_range(parse_f64(v, "unoise_roughness")? as f32, roughness_range())?;
+        let lacunarity = validate_range(
+            parse_f64(v, "unoise_lacunarity")? as f32,
+            lacunarity_range(),
+        )?;
+        let distortion = validate_range(
+            parse_f64(v, "unoise_distortion")? as f32,
+            lacunarity_range(),
+        )?;
 
         Ok(Self {
             scale,

@@ -5,7 +5,7 @@ use rand::random_range;
 use serde::Serialize;
 use serde_json::{Value, json};
 
-use crate::shader::ParseError;
+use crate::shader::{ParseError, parse_f64, validate_range};
 
 fn scale_range() -> RangeInclusive<f32> {
     2.0..=20.0
@@ -45,10 +45,10 @@ impl VoronoiArgs {
         })
     }
 
-    pub fn from_json(json: &Value) -> Result<Self, ParseError> {
-        let scale = json["voronoi_scale"].as_f64().expect("voronoi_scale was not a number") as f32;
-        let detail = json["voronoi_detail"].as_f64().expect("voronoi_detail was not a number") as f32;
-        let randomize = json["voronoi_randomize"].as_f64().expect("voronoi_randomize was not a number") as f32;
+    pub fn from_json(v: &Value) -> Result<Self, ParseError> {
+        let scale = validate_range(parse_f64(v, "voronoi_scale")? as f32, scale_range())?;
+        let detail = validate_range(parse_f64(v, "voronoi_detail")? as f32, scale_range())?;
+        let randomize = validate_range(parse_f64(v, "voronoi_randomize")? as f32, scale_range())?;
 
         Ok(Self { scale, detail, randomize })
     }

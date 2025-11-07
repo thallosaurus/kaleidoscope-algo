@@ -23,6 +23,7 @@ mod wave;
 pub enum ParseError {
     WrongType(String),
     WrongTextureIndex(u8),
+    OutOfRangeError,
 }
 
 impl Display for ParseError {
@@ -32,6 +33,7 @@ impl Display for ParseError {
                 write!(f, "{} was not a number", key)
             }
             ParseError::WrongTextureIndex(index) => write!(f, "unknown index texture {}", index),
+            ParseError::OutOfRangeError => write!(f, "value was out of range"),
         }
     }
 }
@@ -377,21 +379,10 @@ impl CompositeArgs {
     }
 
     fn from_json(json: &Value) -> Result<Self, ParseError> {
-        let hue = json["composite_hue"]
-            .as_f64()
-            .expect("composite_hue was not a number") as f32;
-
-        let lens_dispersion = json["composite_lens_dispersion"]
-            .as_f64()
-            .expect("composite_lens_dispersion was not a number")
-            as f32;
-        let lens_distortion = json["composite_lens_distortion"]
-            .as_f64()
-            .expect("composite_lens_distortion was not a number")
-            as f32;
-        let saturation = json["composite_saturation"]
-            .as_f64()
-            .expect("composite_saturation was not a number") as f32;
+        let hue = validate_range(parse_f64(json, "composite_hue")? as f32, hue_range())?;
+        let lens_dispersion = validate_range(parse_f64(json, "composite_lens_dispersion")? as f32, lens_dispersion_range())?;
+        let lens_distortion = validate_range(parse_f64(json, "composite_lens_distortion")? as f32, lens_distortion_range())?;
+        let saturation = validate_range(parse_f64(json, "composite_saturation")? as f32, saturation_range())?;
         Ok(Self {
             lens_distortion,
             lens_dispersion,
@@ -401,17 +392,14 @@ impl CompositeArgs {
     }
 }
 
-fn validate_range<T>(value: T, range: std::ops::RangeInclusive<T>, key: &str) -> Result<T, ParseError>
+pub fn validate_range<T>(value: T, range: std::ops::RangeInclusive<T>) -> Result<T, ParseError>
 where
     T: PartialOrd + Copy + std::fmt::Debug,
 {
     if range.contains(&value) {
         Ok(value)
     } else {
-        Err(ParseError::WrongType(format!(
-            "{} was out of range: {:?} not in {:?}",
-            key, value, range
-        )))
+        Err(ParseError::OutOfRangeError)
     }
 }
 
