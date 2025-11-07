@@ -96,6 +96,7 @@ impl KaleidoArgs {
     }
 
     pub fn from_json(v: Value) -> Result<Self, ParseError> {
+        println!("{:?}", v.as_object());
         let repetition = parse_u64(&v, "repetition")? as u8;
         let scaling = parse_f64(&v, "scaling")? as f32;
         let rotation = parse_f64(&v, "rotation")? as f32;
@@ -417,6 +418,7 @@ where
 
 fn parse_u64(v: &Value, key: &'static str) -> Result<u64, ParseError> {
     let value = v[key].as_u64();
+    println!("[DEBUG/u64]{}: {:?}", key, value);
     if let Some(value) = value {
         Ok(value)
     } else {
@@ -425,6 +427,7 @@ fn parse_u64(v: &Value, key: &'static str) -> Result<u64, ParseError> {
 }
 fn parse_f64(v: &Value, key: &'static str) -> Result<f64, ParseError> {
     let value = v[key].as_f64();
+    println!("[DEBUG/f64]{}: {:?}", key, value);
     if let Some(value) = value {
         Ok(value)
     } else {
@@ -433,6 +436,7 @@ fn parse_f64(v: &Value, key: &'static str) -> Result<f64, ParseError> {
 }
 fn parse_string(v: &Value, key: &'static str) -> Result<String, ParseError> {
     let value = v[key].as_str();
+    println!("[DEBUG/string]{}: {:?}", key, value);
     if let Some(value) = value {
         Ok(String::from(value))
     } else {

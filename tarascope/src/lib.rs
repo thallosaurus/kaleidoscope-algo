@@ -30,7 +30,7 @@ pub struct RenderStatus {
 }
 
 fn extract_static_file(buffer: &[u8]) -> io::Result<Arc<Mutex<NamedTempFile>>> {
-    let mut blend_tmp = Arc::new(Mutex::new(NamedTempFile::new()?));
+    let blend_tmp = Arc::new(Mutex::new(NamedTempFile::new()?));
     {
         let mut b = blend_tmp.try_lock().unwrap();
         let mut writer = BufWriter::new(b.as_file_mut());
