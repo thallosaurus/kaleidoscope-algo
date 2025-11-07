@@ -1,5 +1,6 @@
 use std::{
-    process::{ExitStatus, Stdio}, sync::Arc,
+    process::{ExitStatus, Stdio},
+    sync::Arc,
 };
 
 use command_fds::{CommandFdExt, FdMapping};
@@ -8,12 +9,16 @@ use tokio::{
     io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader},
     net::unix::pipe::{self},
     process::Command,
-    sync::{Mutex, mpsc::{UnboundedSender}},
+    sync::{Mutex, mpsc::UnboundedSender},
 };
 
 use crate::shader::KaleidoArgs;
 
-pub async fn run(cmd: &mut Command, kargs: &KaleidoArgs, sender: UnboundedSender<String>) -> io::Result<ExitStatus> {
+pub async fn run(
+    cmd: &mut Command,
+    kargs: &KaleidoArgs,
+    sender: UnboundedSender<String>,
+) -> io::Result<ExitStatus> {
     let (writer, reader) = pipe::pipe()?;
 
     let sender = Arc::new(Mutex::new(sender));
@@ -33,26 +38,26 @@ pub async fn run(cmd: &mut Command, kargs: &KaleidoArgs, sender: UnboundedSender
     let stdout_path = kargs.blender_stdout_path();
     let stdout_task = tokio::spawn(async move {
         let mut log = File::create(stdout_path)
-        .await
-        .expect("failed to create output log");
-    
-    let mut stdout_bufreader = BufReader::new(stdout);
-    loop {
-        let mut stdout_buf = String::new();
-        let read = stdout_bufreader.read_line(&mut stdout_buf).await;
-        
-        match read {
-            // EOF
-            Ok(0) => break,
-            Ok(s) => {
-                println!("{}", stdout_buf.trim());
-                log.write_all(stdout_buf.as_bytes()).await.unwrap();
-                continue;
+            .await
+            .expect("failed to create output log");
+
+        let mut stdout_bufreader = BufReader::new(stdout);
+        loop {
+            let mut stdout_buf = String::new();
+            let read = stdout_bufreader.read_line(&mut stdout_buf).await;
+
+            match read {
+                // EOF
+                Ok(0) => break,
+                Ok(s) => {
+                    println!("{}", stdout_buf.trim());
+                    log.write_all(stdout_buf.as_bytes()).await.unwrap();
+                    continue;
+                }
+                Err(e) => eprintln!("{}", e),
             }
-            Err(e) => eprintln!("{}", e),
         }
-    }
-});
+    });
 
     let stderr = ccmd.stderr.take().unwrap();
     let stderr_path = kargs.blender_stderr_path();
@@ -61,7 +66,7 @@ pub async fn run(cmd: &mut Command, kargs: &KaleidoArgs, sender: UnboundedSender
             .await
             .expect("failed to create output log");
         let mut stderr_bufreader = BufReader::new(stderr);
-        
+
         loop {
             let mut stderr_buf = String::new();
             let read = stderr_bufreader.read_line(&mut stderr_buf).await;
