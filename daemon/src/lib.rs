@@ -20,6 +20,8 @@ use crate::database::{
 
 pub mod database;
 
+static MAX_QUEUE_ITEMS: usize = 1;
+
 enum RenderQueueRequest {
     Random,
 }
@@ -48,7 +50,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     let r_args = Arc::new(Mutex::new(args));
 
     // for the start allocate a size 2 render
-    let (tx, mut rx) = mpsc::channel::<RenderQueueRequest>(1);
+    let (tx, mut rx) = mpsc::channel::<RenderQueueRequest>(MAX_QUEUE_ITEMS);
 
     // render queue task
     let _queue_task = tokio::spawn(async move {
