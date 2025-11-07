@@ -3,15 +3,7 @@ import sys
 import bpy # type: ignore
 import base64
 import json
-
-bpy.app.debug_wm = True
-    
-def import_texture(path):
-    tex = bpy.data.textures.new(name="custom_texture", type="IMAGE")
-    img = bpy.data.images.load(path)
-    tex.image = img
-    
-    return tex
+#import psycopg2
 
 def decode_input_data(data):
     base64_bytes = data.encode("ascii")
@@ -21,13 +13,25 @@ def decode_input_data(data):
     print(j)
     return j
 
+bpy.app.debug_wm = True
+writer_fd = "7"
+back_channel = open('/dev/fd/' + writer_fd, 'w')
+data = decode_input_data(sys.argv[-1])
+
+def import_texture(path):
+    tex = bpy.data.textures.new(name="custom_texture", type="IMAGE")
+    img = bpy.data.images.load(path)
+    tex.image = img
+    
+    return tex
+
 def set_property(key, value):
     print("Setting " + key + " to " + str(value))
     bpy.data.objects["Plane"][key] = value
 
 
-def init(scene):
-    data = decode_input_data(sys.argv[-1])
+def r_init(scene):
+    global data
     set_property("texture_index", data["texture_index"])
     set_property("repetition", data["repetition"])
     set_property("scaling", data["scaling"])
@@ -49,11 +53,12 @@ def init(scene):
     bpy.ops.wm.save_as_mainfile(filepath=data["output_directory"] + "/" + data["id"] + "/project.blend")
     
 def post_render(scene):
-    print("post render")
-    # this forces blender to quit itself
-    #bpy.ops.wm.quit_blender()
+    global data
+    status = json.dumps({'id': data["id"] , 'frame': scene.frame_current})
+    back_channel.write(status + "\n")
+    back_channel.flush()
 
 bpy.app.handlers.render_init.clear()
-bpy.app.handlers.render_init.append(init)
+bpy.app.handlers.render_init.append(r_init)
 bpy.app.handlers.render_post.clear()
 bpy.app.handlers.render_post.append(post_render)

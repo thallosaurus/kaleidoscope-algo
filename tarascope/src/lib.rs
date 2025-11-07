@@ -1,13 +1,15 @@
 use std::{
-    cell::RefCell, fs::{File, create_dir}, io::{self, BufWriter, Write}, process::{Command, ExitStatus}, rc::Rc
+    cell::RefCell, fs::{File, create_dir}, io::{self, BufWriter, Write}, process::ExitStatus, sync::Arc
 };
 
-use base64::{Engine, prelude::BASE64_STANDARD};
+use serde::{Deserialize, Serialize};
 use tempfile::NamedTempFile;
+use tokio::{process::Command, sync::{Mutex, mpsc::UnboundedSender}};
 
-use crate::shader::KaleidoArgs;
-pub mod shader;
+use crate::{exec::run, shader::KaleidoArgs};
 pub mod encoder;
+pub mod shader;
+mod exec;
 
 static BLEND_FILE: &[u8] = include_bytes!("../kaleido.blend");
 static PYTHON_LOADER: &[u8] = include_bytes!("../loader.py");
@@ -21,101 +23,84 @@ static BLENDER_PATH: &str = "blender";
 #[cfg(target_os = "windows")]
 static BLENDER_PATH: &str = "C:\\Program Files\\Blender Foundation\\Blender\\blender.exe";
 
-fn extract_static_file(buffer: &[u8]) -> io::Result<Rc<RefCell<NamedTempFile>>> {
-    let blend_tmp = Rc::new(RefCell::new(NamedTempFile::new()?));
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RenderStatus {
+    pub id: String,
+    pub frame: i32,
+}
+
+fn extract_static_file(buffer: &[u8]) -> io::Result<Arc<Mutex<NamedTempFile>>> {
+    let mut blend_tmp = Arc::new(Mutex::new(NamedTempFile::new()?));
     {
-        let mut b = blend_tmp.borrow_mut();
+        let mut b = blend_tmp.try_lock().unwrap();
         let mut writer = BufWriter::new(b.as_file_mut());
         writer.write(buffer)?;
     }
     Ok(blend_tmp)
 }
 
-pub fn run_kaleidoscope(args: &KaleidoArgs) -> io::Result<KaleidoOutput> {
+pub async fn run_kaleidoscope(args: &KaleidoArgs, sender: UnboundedSender<String>) -> io::Result<KaleidoOutput> {
     // Encode the parameters to base64
-    let encoded = BASE64_STANDARD.encode(args.json().to_string());
+    let encoded = args.base64();
 
     // extract Project File to a temporary location which gets dropped after the job is done
     let project_file = extract_static_file(BLEND_FILE)?;
-    let project_borrow = project_file.borrow_mut();
-    let project_path = project_borrow.path();
+    let project_borrow = project_file.try_lock().unwrap();
+    let tmp_project_path = project_borrow.path();
 
     // same with the loader file
     let loader_file = extract_static_file(PYTHON_LOADER)?;
-    let loader_borrow = loader_file.borrow_mut();
-    let loader_path = loader_borrow.path();
+    let loader_borrow = loader_file.try_lock().unwrap();
+    let tmp_loader_path = loader_borrow.path();
 
     // create the target project
-    create_dir(format!("{}/{}",args.get_output_dir(),args.get_id())).expect("couldn't create project dir");
+    create_dir(args.project_folder_path()).expect("couldn't create project dir");
 
     // write the parameters before the render begins
     let json = serde_json::to_string(&args.json()).unwrap();
-    let mut file = File::create(format!("{}/{}/parameters.json", args.get_output_dir(), args.get_id()))?;
+    let mut file = File::create(args.parameters_path())?;
     file.write_all(json.as_bytes())?;
 
-    let child = match Command::new(BLENDER_PATH)
+    let mut cmd = Command::new(BLENDER_PATH);
+    cmd
         //.arg("kaleido.blend")
-        .arg(project_path.as_os_str())
+        .arg(tmp_project_path.as_os_str())
         .arg("--factory-startup")
         .arg("--log-file")
-        .arg(format!(
-            "{}/{}/blender.log",
-            args.get_output_dir(),
-            args.get_id()
-        ))
+        .arg(args.blender_native_log_path())
         .arg("-s")
         .arg(args.get_start_frame().to_string())
         .arg("-e")
         .arg(args.get_end_frame().to_string())
         .arg("-o")
-        .arg(format!(
-            "{}/{}/frame_#####",
-            args.get_output_dir(),
-            args.get_id()
-        ))
+        .arg(args.blender_frame_path())
         .arg("-Y")
         .arg("-P")
-        .arg(loader_path.as_os_str())
+        .arg(tmp_loader_path.as_os_str())
         //.arg("loader.py")
         .arg("-f")
         .arg("0")
         .arg("-b")
         .arg("-a")
         .arg("--")
-        .arg(encoded)
-        .spawn()
-    {
-        Ok(child) => child,
-        Err(err) => panic!("{}", err),
-    };
-
+        .arg(encoded);
     // wait until the render has finished
-    let output = child.wait_with_output()?;
+    //let output = child.wait_with_output()?;
 
-    // TODO write stdout
-    let mut log = File::create(format!("{}/{}/blender.stdout.log", args.get_output_dir(), args.get_id()))?;
-    log.write_all(&output.stdout)?;
-    log.flush()?;
-
-    // TODO write stderr
-    let mut log_err = File::create(format!("{}/{}/blender.stderr.log", args.get_output_dir(), args.get_id()))?;
-    log_err.write_all(&output.stderr)?;
-    log_err.flush()?;
-
-    //Ok(output.status)
-    Ok(KaleidoOutput::new(output.status, args.get_output_dir()))
+    let status = run(&mut cmd, args, sender).await?;
+    Ok(KaleidoOutput::new(status, args.output_dir()))
 }
 
 pub struct KaleidoOutput {
     pub exit_status: ExitStatus,
-    _output_directory: String
+    _output_directory: String,
 }
 
 impl KaleidoOutput {
     pub fn new(status: ExitStatus, directory: String) -> Self {
         KaleidoOutput {
             _output_directory: directory,
-            exit_status: status
+            exit_status: status,
         }
     }
 }

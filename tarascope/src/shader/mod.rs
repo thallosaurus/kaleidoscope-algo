@@ -1,4 +1,5 @@
 use core::panic;
+use base64::{Engine, prelude::BASE64_STANDARD};
 use clap_derive::{Parser, Subcommand};
 use rand::random_range;
 use serde::Serialize;
@@ -43,6 +44,7 @@ pub struct KaleidoArgs {
 
 impl KaleidoArgs {
     pub fn random(output_dir: OutputArgs) -> Self {
+        println!("[DEBUG] {}", output_dir.output_dir);
         Self {
             texture: TextureSelector::random(),
             polar: PolarArgs::random(),
@@ -57,7 +59,7 @@ impl KaleidoArgs {
     pub fn json(&self) -> Value {
         json!({
             "id": self.get_id(),
-            "output_directory": self.get_output_dir(),
+            "output_directory": self.output_dir(),
             "texture_index": self.texture.get_index(),
             "repetition": self.polar.repetition,
             "scaling": self.polar.scaling,
@@ -67,6 +69,10 @@ impl KaleidoArgs {
             "composite": self.composite.json(),
             "frames": self.frames.json()
         })
+    }
+
+    pub fn base64(&self) -> String {
+        BASE64_STANDARD.encode(self.json().to_string())
     }
 
     pub fn get_start_frame(&self) -> u16 {
@@ -80,10 +86,38 @@ impl KaleidoArgs {
         self.id.clone()
     }
 
-    pub fn get_output_dir(&self) -> String {
+    pub fn output_dir(&self) -> String {
         /*let cwd = env::current_dir().expect("cannot access current working directory");
         let p = cwd.as_path().to_str().unwrap();*/
         self.output.output_dir.clone()
+    }
+
+    pub fn project_folder_path(&self) -> String {
+        format!("{}/{}", self.output_dir(), self.get_id())
+    }
+
+    pub fn blender_stdout_path(&self) -> String {
+        format!("{}/blender.stdout.log", self.project_folder_path())
+    }
+    
+    pub fn blender_stderr_path(&self) -> String {
+        format!("{}/blender.stderr.log", self.project_folder_path())
+    }
+    
+    pub fn parameters_path(&self) -> String {
+        format!("{}/parameters.json", self.project_folder_path())
+    }
+    
+    pub fn blender_project_path(&self) -> String {
+        format!("{}/project.blend", self.project_folder_path())
+    }
+
+    pub fn blender_frame_path(&self) -> String {
+        format!("{}/frame_#####", self.project_folder_path())
+    }
+
+    pub fn blender_native_log_path(&self) -> String {
+        format!("{}/blender.log", self.project_folder_path())
     }
 }
 

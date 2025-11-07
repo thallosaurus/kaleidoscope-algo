@@ -1,0 +1,16 @@
+[Unit]
+Description=Tarascope Server
+#Documentation=http://deno.land
+Wants=network-online.target
+After=network-online.target
+[Service]
+Type=simple
+User=rillo
+WorkingDirectory=/opt/tarascope
+ExecStart=/opt/tarascope/target/release/tarascope-server --output-dir /mnt/blender_nfs/tarascope
+ExecStop=/bin/kill -HUP $MAINPID
+#PIDFile=/r/blah/blah.pid
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

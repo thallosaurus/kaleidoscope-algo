@@ -1,0 +1,93 @@
+use std::{env::var, error::Error};
+
+use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
+use tarascope::RenderStatus;
+
+pub async fn init_database() -> Result<Pool<Postgres>, Box<dyn Error>> {
+    let host = var("PG_HOST").unwrap_or("localhost".to_string());
+    let username = var("PG_USER").unwrap_or("postgres".to_string());
+    let password = var("PG_PASS").unwrap_or("password".to_string());
+    let database = var("PG_DB").unwrap_or("postgres".to_string());
+    let connection_uri = format!("postgres://{}:{}@{}/{}", username, password, host, database);
+
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(connection_uri.as_str())
+        .await?;
+
+    println!("Connection to Database successful");
+    Ok(pool)
+}
+
+pub async fn trigger_generation(pool: &Pool<Postgres>) -> Result<(), Box<dyn Error>> {
+    sqlx::query("NOTIFY generate_random").execute(pool).await?;
+    Ok(())
+}
+
+pub async fn register_new_kaleidoscope(
+    pool: &Pool<Postgres>,
+    id: String,
+    params: String,
+) -> Result<(), Box<dyn Error>> {
+    sqlx::query("INSERT INTO public.tarascope (id, parameters) VALUES (uuid($1), json($2))")
+        .bind(id)
+        .bind(params)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+async fn set_kaleidoscope_to_waiting(
+    pool: &Pool<Postgres>,
+    id: String,
+) -> Result<(), Box<dyn Error>> {
+    sqlx::query("UPDATE public.tarascope SET status=1 WHERE id = uuid($1)")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+async fn set_kaleidoscope_to_running(
+    pool: &Pool<Postgres>,
+    id: String,
+) -> Result<(), Box<dyn Error>> {
+    sqlx::query("UPDATE public.tarascope SET status=2 WHERE id = uuid($1)")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+async fn set_kaleidoscope_to_failed(
+    pool: &Pool<Postgres>,
+    id: String,
+) -> Result<(), Box<dyn Error>> {
+    sqlx::query("UPDATE public.tarascope SET status=4 WHERE id = uuid($1)")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn set_kaleidoscope_to_done(
+    pool: &Pool<Postgres>,
+    id: String,
+) -> Result<(), Box<dyn Error>> {
+    sqlx::query("UPDATE public.tarascope SET status=3 WHERE id = uuid($1)")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn insert_frame(
+    pool: &Pool<Postgres>,
+    update: RenderStatus,
+) -> Result<(), Box<dyn Error>> {
+    sqlx::query("INSERT INTO public.frames (kaleidoid, frame_count) VALUES (uuid($1), $2)")
+        .bind(update.id)
+        .bind(update.frame)
+        .execute(pool)
+        .await?;
+    Ok(())
+}

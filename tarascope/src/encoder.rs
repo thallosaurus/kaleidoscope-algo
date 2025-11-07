@@ -15,8 +15,8 @@ pub fn stitch_video_gif(kargs: &KaleidoArgs) -> io::Result<()> {
             "-framerate",
             "60",
             "-i",
-            format!("{}/{}/frame_%05d.png", kargs.get_output_dir(), kargs.get_id()).as_str(),
-            format!("{}/{}/video.gif", kargs.get_output_dir(), kargs.get_id()).as_str(),
+            format!("{}/frame_%05d.png", kargs.project_folder_path()).as_str(),
+            format!("{}/video.gif", kargs.project_folder_path()).as_str(),
         ])
         .status()?;
 
@@ -36,12 +36,12 @@ pub fn stitch_video_mp4(kargs: &KaleidoArgs) -> io::Result<()> {
             "-framerate",
             "60",
             "-i",
-            format!("{}/{}/frame_%05d.png", kargs.get_output_dir(), kargs.get_id()).as_str(),
+            format!("{}/frame_%05d.png", kargs.project_folder_path()).as_str(),
             "-c:v",
             "libx264",
             "-pix_fmt",
             "yuv420p",
-            format!("{}/{}/video.mp4", kargs.get_output_dir(), kargs.get_id()).as_str(),
+            format!("{}/video.mp4", kargs.project_folder_path()).as_str(),
         ])
         .status()?;
 

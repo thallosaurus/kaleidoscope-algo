@@ -1,0 +1,1 @@
+docker run --rm --runtime=nvidia -e NVIDIA_VISIBLE_DEVICES=nvidia.com/gpu=all tarascope
