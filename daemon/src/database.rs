@@ -20,7 +20,7 @@ pub async fn init_database() -> Result<Pool<Postgres>, Box<dyn Error>> {
 }
 
 pub async fn trigger_generation(pool: &Pool<Postgres>) -> Result<(), Box<dyn Error>> {
-    sqlx::query("NOTIFY generate").execute(pool).await?;
+    sqlx::query("NOTIFY generate_random").execute(pool).await?;
     Ok(())
 }
 

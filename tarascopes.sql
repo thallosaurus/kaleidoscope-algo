@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- \restrict psRxaer1jsSkbnqeYHvVjOZ9U9sLRun1rW7aZa1x3VJnDxNPnGMt11corxZxjXF
+-- \restrict rnpg96i8ip4vNvCC7L6l1xUPkfLVDtXWG0l7Io9Dhqk2aQX42GCMhHv7KKL7bsn
 
 -- Dumped from database version 18.0 (Debian 18.0-1.pgdg13+3)
 -- Dumped by pg_dump version 18.0 (Debian 18.0-1.pgdg13+3)
@@ -60,6 +60,32 @@ ALTER SEQUENCE public.frames_frameid_seq OWNED BY public.frames.frameid;
 
 
 --
+-- Name: newview; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.newview AS
+SELECT
+    NULL::uuid AS id,
+    NULL::bigint AS count,
+    NULL::json AS "?column?";
+
+
+ALTER VIEW public.newview OWNER TO postgres;
+
+--
+-- Name: progress; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.progress AS
+SELECT
+    NULL::uuid AS id,
+    NULL::bigint AS count,
+    NULL::json AS frame_count;
+
+
+ALTER VIEW public.progress OWNER TO postgres;
+
+--
 -- Name: tarascope; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -114,6 +140,34 @@ ALTER TABLE ONLY public.tarascope
 
 
 --
+-- Name: newview _RETURN; Type: RULE; Schema: public; Owner: postgres
+--
+
+CREATE OR REPLACE VIEW public.newview AS
+ SELECT t.id,
+    count(f.*) AS count,
+    ((t.parameters -> 'frame'::text) -> '_frames_max'::text) AS "?column?"
+   FROM (public.tarascope t
+     JOIN public.frames f ON ((f.kaleidoid = t.id)))
+  WHERE (t.status <> 3)
+  GROUP BY t.id;
+
+
+--
+-- Name: progress _RETURN; Type: RULE; Schema: public; Owner: postgres
+--
+
+CREATE OR REPLACE VIEW public.progress AS
+ SELECT t.id,
+    count(f.*) AS count,
+    ((t.parameters -> 'frames'::text) -> '_frames_max'::text) AS frame_count
+   FROM (public.tarascope t
+     JOIN public.frames f ON ((f.kaleidoid = t.id)))
+  WHERE (t.status <> 3)
+  GROUP BY t.id;
+
+
+--
 -- Name: frames frames_tarascope_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -125,5 +179,4 @@ ALTER TABLE ONLY public.frames
 -- PostgreSQL database dump complete
 --
 
---\unrestrict psRxaer1jsSkbnqeYHvVjOZ9U9sLRun1rW7aZa1x3VJnDxNPnGMt11corxZxjXF
-
+-- \unrestrict rnpg96i8ip4vNvCC7L6l1xUPkfLVDtXWG0l7Io9Dhqk2aQX42GCMhHv7KKL7bsn

@@ -9,11 +9,15 @@ use tarascope::{
     run_kaleidoscope,
     shader::{KaleidoArgs, OutputArgs},
 };
-use tokio::sync::{Mutex, mpsc::unbounded_channel};
+use tokio::sync::{Mutex, mpsc::{self, unbounded_channel}};
 
 use crate::database::{init_database, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done};
 
 pub mod database;
+
+enum RenderQueueRequest {
+    Random
+}
 
 /// Generate and store kaleidoscopes in postgres
 #[derive(Parser, Debug, Clone)]
@@ -32,17 +36,37 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     let mut listener = PgListener::connect_with(&pool).await?;
     listener.listen("test").await?;
     listener.listen("test2").await?;
-    listener.listen("generate").await?;
+    listener.listen("generate_random").await?;
 
     let r_pool = Arc::new(Mutex::new(pool));
     let r_args = Arc::new(Mutex::new(args));
 
-    let run_lock = Arc::new(Mutex::new(false));
+    // for the start allocate a size 2 render
+    let (tx, mut rx) = mpsc::channel::<RenderQueueRequest>(1);
+
+    // render queue task
+    tokio::spawn(async move {
+        let pool = r_pool.clone();
+        let args = r_args.clone();
+        loop {
+            while let Some(req) = rx.recv().await {
+                match req {
+                    RenderQueueRequest::Random => {
+                        println!("Starting new random job");
+                        let pool = pool.lock().await;
+                        let args = args.lock().await;
+                        render(&pool, &args).await.unwrap();
+                    },
+                }
+            }
+        }
+    });
 
     // main event loop
+
     loop {
-        let r_pool = r_pool.clone();
-        let r_args = r_args.clone();
+        //let r_pool = r_pool.clone();
+        //let r_args = r_args.clone();
         tokio::select! {
             Ok(Some(msg)) = listener.try_recv() => {
                 // got notification
@@ -51,21 +75,12 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                 match ch {
                     "test" => println!("test notif!"),
                     "test2" => println!("test2 notif!"),
-                    "generate" => {
-                        println!("generate notif");
-                        let run_lock = run_lock.clone();
-                        tokio::spawn(async move {
-                        let mut already_running = run_lock.lock().await;
-                        //if !*already_running {
-                            *already_running = true;
-                                let pool = r_pool.lock().await;
-                                let args = r_args.lock().await;
-                                render(&pool, &args).await.unwrap();
-                                *already_running = false;
-                        //    } else {
-                        //        println!("There is already a job running!");
-                        //    }
-                        });
+
+                    // database sent request for image generation, add to queue
+                    "generate_random" => {
+                        println!("queued new random generation");
+
+                        tx.send(RenderQueueRequest::Random).await.expect("render queue is full");
                     },
                     _ => {
                         println!("unknown channel notification ({})", ch)
