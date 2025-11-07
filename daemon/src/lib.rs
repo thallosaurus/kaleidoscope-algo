@@ -9,14 +9,19 @@ use tarascope::{
     run_kaleidoscope,
     shader::{KaleidoArgs, OutputArgs},
 };
-use tokio::sync::{Mutex, mpsc::{self, unbounded_channel}};
+use tokio::sync::{
+    Mutex,
+    mpsc::{self, unbounded_channel},
+};
 
-use crate::database::{init_database, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done};
+use crate::database::{
+    init_database, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done,
+};
 
 pub mod database;
 
 enum RenderQueueRequest {
-    Random
+    Random,
 }
 
 /// Generate and store kaleidoscopes in postgres
@@ -28,6 +33,7 @@ struct Args {
 }
 
 pub async fn run() -> Result<(), Box<dyn Error>> {
+    // parse cli args
     let args = Args::parse();
 
     let _ = dotenv::dotenv().ok();
@@ -45,25 +51,29 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     let (tx, mut rx) = mpsc::channel::<RenderQueueRequest>(1);
 
     // render queue task
-    tokio::spawn(async move {
+    let _queue_task = tokio::spawn(async move {
         let pool = r_pool.clone();
         let args = r_args.clone();
         loop {
-            while let Some(req) = rx.recv().await {
+            if let Some(req) = rx.recv().await {
                 match req {
                     RenderQueueRequest::Random => {
                         println!("Starting new random job");
                         let pool = pool.lock().await;
                         let args = args.lock().await;
                         render(&pool, &args).await.unwrap();
-                    },
+                        //tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                        println!("Finished Render Job");
+                    }
                 }
+            } else {
+                println!("queue closed");
+                break;
             }
         }
     });
 
     // main event loop
-
     loop {
         //let r_pool = r_pool.clone();
         //let r_args = r_args.clone();
@@ -78,9 +88,13 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
 
                     // database sent request for image generation, add to queue
                     "generate_random" => {
-                        println!("queued new random generation");
-
-                        tx.send(RenderQueueRequest::Random).await.expect("render queue is full");
+                        println!("queue capacity: {}", tx.capacity());
+                        if let Err(e) = tx.try_send(RenderQueueRequest::Random) {
+                            eprintln!("render queue is full! {}", e);
+                            continue;
+                        } else {
+                            println!("queued next random generation");
+                        }
                     },
                     _ => {
                         println!("unknown channel notification ({})", ch)
@@ -90,8 +104,6 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
         }
     }
 }
-
-
 
 async fn render(pool: &Pool<Postgres>, args: &Args) -> Result<(), Box<dyn Error>> {
     //let pool = init_database().await.unwrap();
@@ -111,7 +123,7 @@ async fn render(pool: &Pool<Postgres>, args: &Args) -> Result<(), Box<dyn Error>
 
                 let data: RenderStatus = serde_json::from_str(msg.as_str()).unwrap();
                 insert_frame(&p, data).await.unwrap();
-                continue
+                continue;
             } else {
                 break;
             }
