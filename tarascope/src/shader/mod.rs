@@ -4,7 +4,10 @@ use core::panic;
 use rand::random_range;
 use serde::Serialize;
 use serde_json::{Value, json};
-use std::{fmt::Display, ops::{RangeBounds, RangeInclusive}};
+use std::{
+    fmt::Display,
+    ops::{RangeBounds, RangeInclusive},
+};
 use uuid::Uuid;
 
 use crate::shader::{
@@ -380,9 +383,18 @@ impl CompositeArgs {
 
     fn from_json(json: &Value) -> Result<Self, ParseError> {
         let hue = validate_range(parse_f64(json, "composite_hue")? as f32, hue_range())?;
-        let lens_dispersion = validate_range(parse_f64(json, "composite_lens_dispersion")? as f32, lens_dispersion_range())?;
-        let lens_distortion = validate_range(parse_f64(json, "composite_lens_distortion")? as f32, lens_distortion_range())?;
-        let saturation = validate_range(parse_f64(json, "composite_saturation")? as f32, saturation_range())?;
+        let lens_dispersion = validate_range(
+            parse_f64(json, "composite_lens_dispersion")? as f32,
+            lens_dispersion_range(),
+        )?;
+        let lens_distortion = validate_range(
+            parse_f64(json, "composite_lens_distortion")? as f32,
+            lens_distortion_range(),
+        )?;
+        let saturation = validate_range(
+            parse_f64(json, "composite_saturation")? as f32,
+            saturation_range(),
+        )?;
         Ok(Self {
             lens_distortion,
             lens_dispersion,
@@ -403,8 +415,7 @@ where
     }
 }
 
-fn parse_u64(v: &Value, key: &'static str) -> Result<u64, ParseError>
-{
+fn parse_u64(v: &Value, key: &'static str) -> Result<u64, ParseError> {
     let value = v[key].as_u64();
     if let Some(value) = value {
         Ok(value)

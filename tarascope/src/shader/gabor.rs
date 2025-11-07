@@ -60,6 +60,11 @@ impl GaborArgs {
         let orientation = validate_range(parse_f64(v, "gabor_orientation")? as f32, scale_range())?;
         let frequency = validate_range(parse_f64(v, "gabor_frequency")? as f32, scale_range())?;
 
-        Ok(Self { scale, frequency, anisotropy, orientation })
+        Ok(Self {
+            scale,
+            frequency,
+            anisotropy,
+            orientation,
+        })
     }
 }

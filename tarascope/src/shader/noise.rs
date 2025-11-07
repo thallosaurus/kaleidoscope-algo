@@ -11,16 +11,16 @@ use crate::shader::{ParseError, parse_f64, validate_range};
 pub struct NoiseArgs {
     #[arg(long)]
     scale: f32,
-    
+
     #[arg(long)]
     detail: f32,
-    
+
     #[arg(long)]
     roughness: f32,
-    
+
     #[arg(long)]
     lacunarity: f32,
-    
+
     #[arg(long)]
     distortion: f32,
 }
@@ -65,14 +65,16 @@ impl NoiseArgs {
             "noise_distortion": self.distortion
         })
     }
-    
+
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
         let scale = validate_range(parse_f64(v, "noise_scale")? as f32, scale_range())?;
         let detail = validate_range(parse_f64(v, "noise_detail")? as f32, detail_range())?;
         let roughness = validate_range(parse_f64(v, "noise_roughness")? as f32, roughness_range())?;
-        let lacunarity = validate_range(parse_f64(v, "noise_lacunarity")? as f32, lacunarity_range())?;
-        let distortion = validate_range(parse_f64(v, "noise_distortion")? as f32, lacunarity_range())?;
-        
+        let lacunarity =
+            validate_range(parse_f64(v, "noise_lacunarity")? as f32, lacunarity_range())?;
+        let distortion =
+            validate_range(parse_f64(v, "noise_distortion")? as f32, lacunarity_range())?;
+
         Ok(Self {
             scale,
             detail,

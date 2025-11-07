@@ -21,20 +21,20 @@ fn randomize_range() -> RangeInclusive<f32> {
 pub struct VoronoiArgs {
     #[arg(long)]
     scale: f32,
-    
+
     #[arg(long)]
     detail: f32,
-    
+
     #[arg(long)]
     randomize: f32,
 }
 
 impl VoronoiArgs {
     pub fn random() -> Self {
-        Self { 
+        Self {
             scale: random_range(scale_range()),
-            detail: random_range(detail_range()), 
-            randomize: random_range(randomize_range())
+            detail: random_range(detail_range()),
+            randomize: random_range(randomize_range()),
         }
     }
     pub fn json(&self) -> Value {
@@ -50,6 +50,10 @@ impl VoronoiArgs {
         let detail = validate_range(parse_f64(v, "voronoi_detail")? as f32, scale_range())?;
         let randomize = validate_range(parse_f64(v, "voronoi_randomize")? as f32, scale_range())?;
 
-        Ok(Self { scale, detail, randomize })
+        Ok(Self {
+            scale,
+            detail,
+            randomize,
+        })
     }
 }
