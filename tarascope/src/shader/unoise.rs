@@ -65,7 +65,7 @@ impl UnoiseArgs {
         )?;
         let distortion = validate_range(
             parse_f64(v, "unoise_distortion")? as f32,
-            lacunarity_range(),
+            distortion_range(),
         )?;
 
         Ok(Self {

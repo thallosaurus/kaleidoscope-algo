@@ -47,8 +47,8 @@ impl VoronoiArgs {
 
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
         let scale = validate_range(parse_f64(v, "voronoi_scale")? as f32, scale_range())?;
-        let detail = validate_range(parse_f64(v, "voronoi_detail")? as f32, scale_range())?;
-        let randomize = validate_range(parse_f64(v, "voronoi_randomize")? as f32, scale_range())?;
+        let detail = validate_range(parse_f64(v, "voronoi_detail")? as f32, detail_range())?;
+        let randomize = validate_range(parse_f64(v, "voronoi_randomize")? as f32, randomize_range())?;
 
         Ok(Self {
             scale,

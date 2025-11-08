@@ -1,7 +1,11 @@
 use std::{env::var, error::Error};
 
 use serde_json::Value;
-use sqlx::{Pool, Postgres, postgres::PgPoolOptions, types::{Json, JsonRawValue}};
+use sqlx::{
+    Pool, Postgres,
+    postgres::PgPoolOptions,
+    types::{Json, JsonRawValue},
+};
 use tarascope::{RenderStatus, shader::KaleidoArgs};
 
 pub async fn init_database() -> Result<Pool<Postgres>, Box<dyn Error>> {
@@ -108,13 +112,17 @@ pub async fn insert_new_parameterized_job(
 }
 
 pub async fn get_specific_job_parameters(
-        pool: &Pool<Postgres>,
-        id: String
+    pool: &Pool<Postgres>,
+    id: String,
 ) -> Result<KaleidoArgs, Box<dyn Error>> {
     let q: (String,) = sqlx::query_as("SELECT parameters::text FROM tarascope WHERE id = uuid($1)")
         .bind(id)
         .fetch_one(pool)
         .await?;
 
-    Ok(KaleidoArgs::from_json(q.0.into()).unwrap())
+    let vvvv: Value = serde_json::from_str(&q.0).unwrap();
+
+    println!("db: {:?}", vvvv);
+
+    Ok(KaleidoArgs::from_json(vvvv).unwrap())
 }

@@ -73,7 +73,7 @@ impl NoiseArgs {
         let lacunarity =
             validate_range(parse_f64(v, "noise_lacunarity")? as f32, lacunarity_range())?;
         let distortion =
-            validate_range(parse_f64(v, "noise_distortion")? as f32, lacunarity_range())?;
+            validate_range(parse_f64(v, "noise_distortion")? as f32, distortion_range())?;
 
         Ok(Self {
             scale,

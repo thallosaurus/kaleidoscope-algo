@@ -97,10 +97,10 @@ impl KaleidoArgs {
 
     pub fn from_json(v: Value) -> Result<Self, ParseError> {
         println!("{:?}", v.as_object());
-        let repetition = parse_u64(&v, "repetition")? as u8;
-        let scaling = parse_f64(&v, "scaling")? as f32;
-        let rotation = parse_f64(&v, "rotation")? as f32;
-        let pingpong = parse_f64(&v, "pingpong")? as f32;
+        let repetition = validate_range(parse_u64(&v, "repetition")? as u8, repetition_range())?;
+        let scaling = validate_range(parse_f64(&v, "scaling")? as f32, scaling_range())?;
+        let rotation = validate_range(parse_f64(&v, "rotation")? as f32, rotation_range())?;
+        let pingpong = validate_range(parse_f64(&v, "pingpong")? as f32, pingpong_range())?;
         let id = parse_string(&v, "id")?;
 
         Ok(Self {
@@ -338,10 +338,10 @@ impl TextureSelector {
 
 #[derive(Debug, Parser, Clone, Serialize)]
 struct CompositeArgs {
-    #[arg(long)]
+    #[clap(long, allow_hyphen_values = true)]
     lens_distortion: f32,
 
-    #[arg(long)]
+    #[clap(long, allow_hyphen_values = true)]
     lens_dispersion: f32,
 
     #[arg(long)]
@@ -351,11 +351,14 @@ struct CompositeArgs {
     saturation: f32,
 }
 
+// TODO Move to static config file? 
 fn lens_distortion_range() -> RangeInclusive<f32> {
-    -1.0..=-0.5
+    -0.5..=-1.0
 }
+
+// TODO Move to static config file? 
 fn lens_dispersion_range() -> RangeInclusive<f32> {
-    -1.0..=-0.5
+    -0.5..=-1.0
 }
 fn hue_range() -> RangeInclusive<f32> {
     0.0..=1.0
@@ -412,13 +415,22 @@ where
     if range.contains(&value) {
         Ok(value)
     } else {
+        eprintln!("{:?} {:?}", value, range);
         Err(ParseError::OutOfRangeError)
     }
 }
 
+fn parse(v: &Value, key: &'static str) -> Result<Value, ParseError> {
+    let value = v.get(key);
+    if let Some(v) = value {
+        Ok(v.clone())
+    } else {
+        Err(ParseError::WrongType(String::from(key)))
+    }
+}
 fn parse_u64(v: &Value, key: &'static str) -> Result<u64, ParseError> {
     let value = v[key].as_u64();
-    println!("[DEBUG/u64]{}: {:?}", key, value);
+    println!("[DEBUG/u64] {}: {:?}", key, value);
     if let Some(value) = value {
         Ok(value)
     } else {
@@ -427,7 +439,7 @@ fn parse_u64(v: &Value, key: &'static str) -> Result<u64, ParseError> {
 }
 fn parse_f64(v: &Value, key: &'static str) -> Result<f64, ParseError> {
     let value = v[key].as_f64();
-    println!("[DEBUG/f64]{}: {:?}", key, value);
+    println!("[DEBUG/f64] {}: {:?}", key, value);
     if let Some(value) = value {
         Ok(value)
     } else {
@@ -436,7 +448,7 @@ fn parse_f64(v: &Value, key: &'static str) -> Result<f64, ParseError> {
 }
 fn parse_string(v: &Value, key: &'static str) -> Result<String, ParseError> {
     let value = v[key].as_str();
-    println!("[DEBUG/string]{}: {:?}", key, value);
+    println!("[DEBUG/string] {}: {:?}", key, value);
     if let Some(value) = value {
         Ok(String::from(value))
     } else {

@@ -51,7 +51,7 @@ impl MagicArgs {
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
         let depth = validate_range(parse_u64(v, "magic_depth")? as u8, depth_range())?;
         let scale = validate_range(parse_f64(v, "magic_scale")? as f32, scale_range())?;
-        let dist = validate_range(parse_f64(v, "magic_distortion")? as f32, scale_range())?;
+        let dist = validate_range(parse_f64(v, "magic_distortion")? as f32, distortion_range())?;
 
         Ok(Self { depth, scale, dist })
     }

@@ -56,9 +56,9 @@ impl GaborArgs {
 
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
         let scale = validate_range(parse_f64(v, "gabor_scale")? as f32, scale_range())?;
-        let anisotropy = validate_range(parse_f64(v, "gabor_anisotropy")? as f32, scale_range())?;
-        let orientation = validate_range(parse_f64(v, "gabor_orientation")? as f32, scale_range())?;
-        let frequency = validate_range(parse_f64(v, "gabor_frequency")? as f32, scale_range())?;
+        let anisotropy = validate_range(parse_f64(v, "gabor_anisotropy")? as f32, anisotropy_range())?;
+        let orientation = validate_range(parse_f64(v, "gabor_orientation")? as f32, orientation_range())?;
+        let frequency = validate_range(parse_f64(v, "gabor_frequency")? as f32, frequency_range())?;
 
         Ok(Self {
             scale,

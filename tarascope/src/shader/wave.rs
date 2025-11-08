@@ -62,13 +62,13 @@ impl WaveArgs {
     }
 
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
-        let detail = validate_range(parse_f64(v, "wave_detail")? as f32, scale_range())?;
+        let detail = validate_range(parse_f64(v, "wave_detail")? as f32, detail_range())?;
         let scale = validate_range(parse_f64(v, "wave_scale")? as f32, scale_range())?;
-        let distortion = validate_range(parse_f64(v, "wave_distortion")? as f32, scale_range())?;
+        let distortion = validate_range(parse_f64(v, "wave_distortion")? as f32, distortion_range())?;
         let detail_roughness =
-            validate_range(parse_f64(v, "wave_detail_roughness")? as f32, scale_range())?;
+            validate_range(parse_f64(v, "wave_detail_roughness")? as f32, detail_roughness_range())?;
         let phase_offset =
-            validate_range(parse_f64(v, "wave_phase_offset")? as f32, scale_range())?;
+            validate_range(parse_f64(v, "wave_phase_offset")? as f32, phase_offset_range())?;
 
         Ok(Self {
             scale,
