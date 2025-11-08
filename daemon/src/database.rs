@@ -42,7 +42,7 @@ pub async fn register_new_kaleidoscope(
     Ok(())
 }
 
-async fn set_kaleidoscope_to_waiting(
+pub async fn set_kaleidoscope_to_waiting(
     pool: &Pool<Postgres>,
     id: String,
 ) -> Result<(), Box<dyn Error>> {
@@ -113,7 +113,7 @@ pub async fn insert_new_parameterized_job(
 
 pub async fn get_specific_job_parameters(
     pool: &Pool<Postgres>,
-    id: String,
+    id: &String,
 ) -> Result<KaleidoArgs, Box<dyn Error>> {
     let q: (String,) = sqlx::query_as("SELECT parameters::text FROM tarascope WHERE id = uuid($1)")
         .bind(id)

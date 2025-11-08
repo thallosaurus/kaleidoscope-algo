@@ -6,7 +6,7 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use std::{
     fmt::Display,
-    ops::{RangeBounds, RangeInclusive},
+    ops::RangeInclusive,
 };
 use uuid::Uuid;
 
@@ -321,21 +321,6 @@ impl TextureSelector {
     }
 }
 
-/*impl From<u8> for TextureSelector {
-    fn from(value: u8) -> Self {
-        match value {
-            0 => TextureSelector::Gabor(GaborArgs::random()),
-            1 => TextureSelector::Voronoi(VoronoiArgs::random()),
-            2 => TextureSelector::Wave(WaveArgs::random()),
-            3 => TextureSelector::Magic(MagicArgs::random()),
-            4 => TextureSelector::Noise(NoiseArgs::random()),
-            5 => TextureSelector::Unoise(UnoiseArgs::random()),
-            6 => TextureSelector::Textured(TexturedArgs::random()),
-            _ => panic!("invalid texture index"),
-        }
-    }
-}*/
-
 #[derive(Debug, Parser, Clone, Serialize)]
 struct CompositeArgs {
     #[clap(long, allow_hyphen_values = true)]
@@ -353,12 +338,12 @@ struct CompositeArgs {
 
 // TODO Move to static config file? 
 fn lens_distortion_range() -> RangeInclusive<f32> {
-    -0.5..=-1.0
+    -1.0..=-0.5
 }
 
 // TODO Move to static config file? 
 fn lens_dispersion_range() -> RangeInclusive<f32> {
-    -0.5..=-1.0
+    -1.0..=-0.5
 }
 fn hue_range() -> RangeInclusive<f32> {
     0.0..=1.0
@@ -378,8 +363,8 @@ impl CompositeArgs {
     }
     fn json(&self) -> Value {
         json!({
-            "composite_lens_distortion": -0.1, //self.lens_distortion,
-            "composite_lens_dispersion": -0.3, //self.lens_dispersion
+            "composite_lens_distortion": self.lens_distortion,
+            "composite_lens_dispersion": self.lens_dispersion,
             "composite_hue": self.hue,
             "composite_saturation": self.saturation
         })
@@ -387,6 +372,7 @@ impl CompositeArgs {
 
     fn from_json(json: &Value) -> Result<Self, ParseError> {
         let hue = validate_range(parse_f64(json, "composite_hue")? as f32, hue_range())?;
+
         let lens_dispersion = validate_range(
             parse_f64(json, "composite_lens_dispersion")? as f32,
             lens_dispersion_range(),
@@ -399,6 +385,7 @@ impl CompositeArgs {
             parse_f64(json, "composite_saturation")? as f32,
             saturation_range(),
         )?;
+
         Ok(Self {
             lens_distortion,
             lens_dispersion,

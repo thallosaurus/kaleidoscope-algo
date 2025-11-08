@@ -10,6 +10,7 @@ clap-num = "1.2.0"
 clap_derive = "4.5.49"
 command-fds = { version = "0.3.2", features = ["tokio"] }
 crossbeam = "0.8.4"
+log = "0.4.28"
 rand = "0.9.2"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"

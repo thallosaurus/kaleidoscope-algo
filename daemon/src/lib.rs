@@ -1,4 +1,10 @@
-use std::{cell::LazyCell, env::current_dir, error::Error, rc::Rc, sync::{Arc, LazyLock, OnceLock}};
+use std::{
+    cell::LazyCell,
+    env::current_dir,
+    error::Error,
+    rc::Rc,
+    sync::{Arc, LazyLock, OnceLock},
+};
 
 use clap::Parser;
 use clap_derive::Parser;
@@ -16,7 +22,8 @@ use tokio::sync::{
 };
 
 use crate::database::{
-    get_specific_job_parameters, init_database, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done
+    get_specific_job_parameters, init_database, insert_frame, register_new_kaleidoscope,
+    set_kaleidoscope_to_done, set_kaleidoscope_to_waiting,
 };
 
 pub mod database;
@@ -38,7 +45,7 @@ fn get_cwd() -> &'static str {
 
 enum RenderQueueRequest {
     Random,
-    Parameterized(String)
+    Parameterized(String),
 }
 
 /// Generate and store kaleidoscopes in postgres
@@ -80,15 +87,22 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                     RenderQueueRequest::Random => {
                         println!("Starting new random job");
                         let job = KaleidoArgs::random(String::from(get_cwd()));
+
+                        let j = job.json();
+                        let id = job.get_id();
+                        register_new_kaleidoscope(&pool, &id, j.to_string())
+                            .await
+                            .unwrap();
                         render(&pool, &job).await.unwrap();
                         //tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                         println!("Finished Render Job");
                     }
                     RenderQueueRequest::Parameterized(id) => {
-                        let job = get_specific_job_parameters(&pool, id).await;
-                        println!("{:?}", job);
-                        //println!("Starting new parameterized job {}", id);
-                    },
+                        let job = get_specific_job_parameters(&pool, &id).await.unwrap();
+                        println!("Starting new parameterized job {}", id);
+                        render(&pool, &job).await.unwrap();
+                        println!("Finished Render Job");
+                    }
                 }
             } else {
                 println!("queue closed");
@@ -98,9 +112,9 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     });
 
     // main event loop
+    // listens for database notifications and acts upon them.
+    // Spawns the tasks responsible for rendering
     loop {
-        //let r_pool = r_pool.clone();
-        //let r_args = r_args.clone();
         tokio::select! {
             Ok(Some(msg)) = listener.try_recv() => {
                 // got notification
@@ -115,7 +129,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                     "generate_random" => {
                         println!("queue capacity: {}", tx.capacity());
                         if let Err(e) = tx.try_send(RenderQueueRequest::Random) {
-                            eprintln!("render queue is full! {}", e);
+                            eprintln!("error while adding task to render queue: {}", e);
                             continue;
                         } else {
                             println!("queued next random generation");
@@ -123,7 +137,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                     },
                     "queue_parameter" =>  {
                         if let Err(e) = tx.try_send(RenderQueueRequest::Parameterized(String::from(data))) {
-                            eprintln!("render queue is full {}", e);
+                            eprintln!("error while adding task to render queue: {}", e);
                             continue;
                         } else {
                             println!("queued next parameterized generation");
@@ -159,9 +173,11 @@ async fn render(pool: &Pool<Postgres>, kaleidoargs: &KaleidoArgs) -> Result<(), 
         }
     });
 
-    let j = kaleidoargs.json();
+    /*     let j = kaleidoargs.json();
+    register_new_kaleidoscope(&pool, &id, j.to_string()).await?; */
     let id = kaleidoargs.get_id();
-    register_new_kaleidoscope(&pool, &id, j.to_string()).await?;
+
+    set_kaleidoscope_to_waiting(pool, id).await?;
 
     let output = run_kaleidoscope(&kaleidoargs, sender).await?;
 
