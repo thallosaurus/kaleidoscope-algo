@@ -1,7 +1,8 @@
 use std::error::Error;
 
 use clap::Parser;
-use daemon::database::{init_database, insert_new_parameterized_job, trigger_generation};
+
+use daemon::database::{init_database, insert_new_parameterized_job};
 use tarascope::shader::KaleidoArgs;
 
 #[tokio::main]
