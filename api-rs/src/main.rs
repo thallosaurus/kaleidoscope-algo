@@ -65,8 +65,6 @@ async fn frontpage(state: &State<ApiState<'_>>) -> Result<RawHtml<String>, std::
     content.insert("content".to_string(), json!(data));
     let res = state.handlebars.render("main", &content).unwrap();
 
-
-    //NamedFile::open("index.html").await
     Ok(RawHtml(res))
 }
 
@@ -78,7 +76,7 @@ async fn rocket() -> _ {
 
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("main", "./index.hbs").unwrap();
+    handlebars.register_template_file("main", "./api-rs/index.hbs").unwrap();
 
     rocket::build()
         .manage(ApiState {
