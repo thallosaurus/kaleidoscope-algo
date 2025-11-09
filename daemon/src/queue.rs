@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use log::debug;
-use tarascope::{CommandType, RenderStatus, shader::KaleidoArgs};
+use tarascope::{CommandType, RenderStatus, encoder::stitch_video, shader::KaleidoArgs};
 use tokio::{sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender, channel, error::TrySendError, unbounded_channel}, task::JoinHandle};
 
 use crate::{SharedDatabasePool, SharedTarascope, database::{get_specific_job_parameters, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done, set_kaleidoscope_to_waiting}};
@@ -96,7 +96,6 @@ impl RenderQueue {
         })
     }
 
-    //let pool = init_database().await.unwrap();
     async fn render(
         pool: SharedDatabasePool,
         job: CommandType,
@@ -137,7 +136,8 @@ impl RenderQueue {
         let output = t_lock.start_render(job, sender).await?;
 
         if output.exit_status.success() {
-            //stitch_video(&kaleidoargs).unwrap();
+            let dirs = t_lock.paths_for_job(&id);
+            stitch_video(&dirs).unwrap();
             let lock = pool.lock().await;
             set_kaleidoscope_to_done(&lock, &id).await?;
             drop(lock);

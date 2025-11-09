@@ -179,7 +179,7 @@ impl Tarascope {
     pub fn new(directory: String) -> Self {
         Self { directory }
     }
-    pub fn paths_for_job(&self, job_id: String) -> RenderJobDirectories {
+    pub fn paths_for_job(&self, job_id: &String) -> RenderJobDirectories {
         RenderJobDirectories {
             _directory: self.directory.clone(),
             id: job_id.clone(),
@@ -191,7 +191,8 @@ impl Tarascope {
         sender: UnboundedSender<String>,
     ) -> io::Result<KaleidoOutput> {
         let args = c.project_args();
-        let dirs = self.paths_for_job(args.get_id());
+        let id = args.get_id();
+        let dirs = self.paths_for_job(&id);
 
         // Encode the parameters to base64
         let encoded = args.base64();
