@@ -18,26 +18,8 @@ use crate::{database::init_database, queue::{RenderQueue, RenderQueueRequest}};
 pub mod database;
 mod queue;
 
-
-static OUTPUT_DIR: OnceLock<String> = OnceLock::new();
-
 pub type SharedDatabasePool = Arc<Mutex<Pool<Postgres>>>;
 pub type SharedTarascope = Arc<Mutex<Tarascope>>;
-
-fn set_cwd() {
-    println!("Setting CWD");
-    let cwd = current_dir().expect("no current working directory");
-    let path = cwd.to_string_lossy().to_string();
-    OUTPUT_DIR.set(path).unwrap_or_else(|_| {
-        eprintln!("CWD is already set");
-    });
-}
-
-fn get_cwd() -> &'static str {
-    OUTPUT_DIR.get().expect("CWD is not set")
-}
-
-
 
 /// Generate and store kaleidoscopes in postgres
 #[derive(Parser, Debug, Clone)]
@@ -46,7 +28,6 @@ struct Args {
     #[clap(flatten)]
     out: OutputArgs,
 }
-
 
 pub async fn run() -> Result<(), Box<dyn Error>> {
     // parse cli args

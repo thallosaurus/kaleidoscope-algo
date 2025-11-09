@@ -1,9 +1,11 @@
 use std::{env::var, error::Error};
 
+use chrono::{DateTime, NaiveDateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{
     Pool, Postgres,
-    postgres::PgPoolOptions,
+    postgres::{PgPoolOptions, PgRow, types}, prelude::FromRow
 };
 use tarascope::{RenderStatus, shader::KaleidoArgs};
 
@@ -21,6 +23,26 @@ pub async fn init_database() -> Result<Pool<Postgres>, Box<dyn Error>> {
 
     println!("Connection to Database successful");
     Ok(pool)
+}
+
+pub async fn all_kaleidoscopes(pool: &Pool<Postgres>) -> Result<Vec<Showcase>, Box<dyn Error>> {
+    let d = sqlx::query_as::<_, Showcase>("SELECT id::text, video, gif, thumbnail, ts::timestamp FROM showcase ORDER BY ts DESC")
+    .fetch_all(pool)
+    .await?;
+/* .map(|row: PgRow| {
+    */
+
+    Ok(d)
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct Showcase {
+    // SELECT id, video, gif, thumbnail, ts FROM showcase ORDER BY ts DESC
+    id: String,
+    video: String,
+    gif: String,
+    thumbnail: String,
+    ts: NaiveDateTime
 }
 
 pub async fn trigger_generation(pool: &Pool<Postgres>) -> Result<(), Box<dyn Error>> {
