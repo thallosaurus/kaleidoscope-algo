@@ -12,7 +12,7 @@ use tokio::{
     sync::{Mutex, mpsc::UnboundedSender},
 };
 
-use crate::{RenderJobDirectories, shader::KaleidoArgs};
+use crate::RenderJobDirectories;
 
 /// Runs the blender executor
 pub async fn run(

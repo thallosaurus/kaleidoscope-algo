@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     fs::{File, create_dir},
     io::{self, BufWriter, Write},
     path::Path,
