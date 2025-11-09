@@ -8,10 +8,6 @@ struct VertexOutput {
 
 @vertex
 fn main(@location(0) pos: vec2<f32>) -> VertexOutput {
-
-
-
-    
     var out: VertexOutput;
     out.position = vec4<f32>(
         pos,

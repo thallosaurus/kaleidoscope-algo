@@ -65,8 +65,6 @@ async fn frontpage(state: &State<ApiState<'_>>) -> Result<RawHtml<String>, std::
     content.insert("content".to_string(), json!(data));
     let res = state.handlebars.render("main", &content).unwrap();
 
-
-    //NamedFile::open("index.html").await
     Ok(RawHtml(res))
 }
 
