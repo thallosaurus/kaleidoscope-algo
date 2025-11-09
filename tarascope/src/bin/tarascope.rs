@@ -2,7 +2,7 @@ use std::io::Error;
 
 use clap::{Parser, command};
 use clap_derive::{Parser, Subcommand};
-use tarascope::{CommandType, Tarascope, encoder::stitch_video, shader::{KaleidoArgs, OutputArgs}};
+use tarascope::{CommandType, Tarascope, shader::KaleidoArgs};
 use serde::Serialize;
 use tokio::sync::mpsc::unbounded_channel;
 

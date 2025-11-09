@@ -1,32 +1,19 @@
 use std::{
     env::current_dir,
     error::Error,
-    rc::Rc,
-    sync::{Arc, LazyLock, OnceLock},
+    sync::{Arc, OnceLock},
 };
 
 use clap::Parser;
 use clap_derive::Parser;
-use log::{debug, log};
-use serde_json::to_string;
 use sqlx::{Pool, Postgres, postgres::PgListener};
 use tarascope::{
-    CommandType, RenderStatus, Tarascope,
-    encoder::stitch_video,
-    shader::{KaleidoArgs, OutputArgs},
+    Tarascope,
+    shader::OutputArgs,
 };
-use tokio::{
-    sync::{
-        Mutex,
-        mpsc::{self, Receiver, Sender, UnboundedReceiver, error::TrySendError, unbounded_channel},
-    },
-    task::JoinHandle,
-};
+use tokio::sync::Mutex;
 
-use crate::{database::{
-    get_specific_job_parameters, init_database, insert_frame, register_new_kaleidoscope,
-    set_kaleidoscope_to_done, set_kaleidoscope_to_waiting,
-}, queue::{RenderQueue, RenderQueueRequest}};
+use crate::{database::init_database, queue::{RenderQueue, RenderQueueRequest}};
 
 pub mod database;
 mod queue;

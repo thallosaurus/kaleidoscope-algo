@@ -2,7 +2,7 @@ use std::error::Error;
 
 use log::debug;
 use tarascope::{CommandType, RenderStatus, encoder::stitch_video, shader::KaleidoArgs};
-use tokio::{sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender, channel, error::TrySendError, unbounded_channel}, task::JoinHandle};
+use tokio::{sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel}, task::JoinHandle};
 
 use crate::{SharedDatabasePool, SharedTarascope, database::{get_specific_job_parameters, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done, set_kaleidoscope_to_waiting}};
 
@@ -26,7 +26,7 @@ static MAX_QUEUE_ITEMS: usize = 1;
 impl RenderQueue {
     pub fn new(pool: SharedDatabasePool, executor: SharedTarascope) -> Self {
         // for the start allocate a size 2 render
-        let (queue_sender, mut rx) = unbounded_channel::<RenderQueueRequest>();
+        let (queue_sender, rx) = unbounded_channel::<RenderQueueRequest>();
 
         Self {
             pool: pool.clone(),
