@@ -86,6 +86,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "tarascope",
 ]
 
 [[package]]

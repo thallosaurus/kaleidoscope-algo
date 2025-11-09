@@ -2,7 +2,7 @@ use std::ops::RangeInclusive;
 
 use clap_derive::Parser;
 use rand::random_range;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::shader::{ParseError, parse_f64, validate_range};
@@ -17,7 +17,7 @@ fn randomize_range() -> RangeInclusive<f32> {
     0.0..=1.0
 }
 
-#[derive(Parser, Debug, Clone, Serialize)]
+#[derive(Parser, Debug, Clone, Serialize, Deserialize)]
 pub struct VoronoiArgs {
     #[arg(long)]
     scale: f32,

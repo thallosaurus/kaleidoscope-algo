@@ -2,7 +2,7 @@ use base64::{Engine, prelude::BASE64_STANDARD};
 use clap_derive::{Parser, Subcommand};
 use core::panic;
 use rand::random_range;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
     fmt::Display,
@@ -41,7 +41,7 @@ impl Display for ParseError {
     }
 }
 
-#[derive(Debug, Parser, Clone, Serialize)]
+#[derive(Debug, Parser, Clone, Serialize, Deserialize)]
 pub struct KaleidoArgs {
     /// Texture to base the kaleidoscope on
     #[structopt(subcommand)]
@@ -180,7 +180,7 @@ fn pingpong_range() -> RangeInclusive<f32> {
     0.5..=4.5
 }
 
-#[derive(Debug, Parser, Clone, Serialize)]
+#[derive(Debug, Parser, Clone, Serialize, Deserialize)]
 struct PolarArgs {
     /// Specifies how many Repetitions the kaleidoscope has (3 - 12)
     #[arg(long)]
@@ -211,7 +211,7 @@ impl PolarArgs {
     }
 }
 
-#[derive(Debug, Subcommand, Clone, Serialize)]
+#[derive(Debug, Subcommand, Clone, Serialize, Deserialize)]
 enum TextureSelector {
     /// Gabor Texture
     Gabor(GaborArgs),
@@ -316,7 +316,7 @@ impl TextureSelector {
     }
 }
 
-#[derive(Debug, Parser, Clone, Serialize)]
+#[derive(Debug, Parser, Clone, Serialize, Deserialize)]
 struct CompositeArgs {
     #[clap(long, allow_hyphen_values = true)]
     lens_distortion: f32,
@@ -438,7 +438,7 @@ fn parse_string(v: &Value, key: &'static str) -> Result<String, ParseError> {
     }
 }
 
-#[derive(Parser, Debug, Clone, Serialize)]
+#[derive(Parser, Debug, Clone, Serialize, Deserialize)]
 struct TexturedArgs {
     file_path: String,
 }
@@ -466,7 +466,7 @@ impl TexturedArgs {
         Ok(Self { file_path })
     }
 }
-#[derive(Parser, Debug, Clone, Serialize)]
+#[derive(Parser, Debug, Clone, Serialize, Deserialize)]
 struct FrameArgs {
     #[arg(long)]
     frame_start: u16,
