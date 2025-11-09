@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use log::debug;
+use log::{debug, error, info};
 use tarascope::{CommandType, RenderStatus, encoder::stitch_video, shader::KaleidoArgs};
 use tokio::{sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel}, task::JoinHandle};
 
@@ -20,8 +20,6 @@ pub struct RenderQueue {
     queue_sender: UnboundedSender<RenderQueueRequest>,
     _handle: JoinHandle<()>,
 }
-
-static MAX_QUEUE_ITEMS: usize = 1;
 
 impl RenderQueue {
     pub fn new(pool: SharedDatabasePool, executor: SharedTarascope) -> Self {
@@ -49,7 +47,7 @@ impl RenderQueue {
                     //let args = args.lock().await;
                     match req {
                         RenderQueueRequest::RandomAnimated => {
-                            println!("Starting new random job");
+                            info!("Starting new random job");
                             let job = KaleidoArgs::random();
 
                             let j = job.json();
@@ -70,13 +68,13 @@ impl RenderQueue {
                             .await
                             .unwrap();
                             //tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-                            println!("Finished Render Job");
+                            info!("Finished Render Job");
                         }
                         RenderQueueRequest::ParameterizedAnimated(id) => {
                             let lock = pool.lock().await;
                             let job = get_specific_job_parameters(&lock, &id).await.unwrap();
                             drop(lock);
-                            println!("Starting new parameterized job {}", id);
+                            info!("Starting new parameterized job {}", id);
                             //render_tasks(&pool, &job).await.unwrap();
                             Self::render(
                                 pool.clone(),
@@ -85,11 +83,11 @@ impl RenderQueue {
                             )
                             .await
                             .unwrap();
-                            println!("Finished Render Job");
+                            info!("Finished Render Job");
                         }
                     }
                 } else {
-                    println!("queue closed");
+                    info!("queue closed");
                     break;
                 }
             }
@@ -128,7 +126,7 @@ impl RenderQueue {
 
         let lock = pool.lock().await;
         if let Err(e) = set_kaleidoscope_to_waiting(&lock, &id).await {
-            eprintln!("{}", e);
+            error!("{}", e);
         }
         drop(lock);
 
@@ -149,7 +147,7 @@ impl RenderQueue {
     pub fn push(&self, request: RenderQueueRequest) -> Result<(), RenderQueueError> {
         //debug!("queue capacity: {}", self.queue_sender.capacity());
         if let Err(e) = self.queue_sender.send(request) {
-            eprintln!("error while adding task to render queue: {}", e);
+            error!("error while adding task to render queue: {}", e);
             Err(RenderQueueError::QueuePushError)
             //Err(e)
         } else {

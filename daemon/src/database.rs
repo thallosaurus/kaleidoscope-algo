@@ -65,7 +65,7 @@ pub async fn register_new_kaleidoscope(
     sqlx::query("INSERT INTO public.tarascope (id, parameters) VALUES (uuid($1), json($2))")
         .bind(id)
         .bind(params)
-        .fetch_one(pool)
+        .execute(pool)
         .await?;
     Ok(())
 }

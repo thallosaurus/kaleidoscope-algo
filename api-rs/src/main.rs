@@ -3,7 +3,7 @@ use std::sync::Arc;
 use daemon::database::{
     all_kaleidoscopes, init_database, insert_new_parameterized_job, single_kaleidoscopes,
 };
-use rocket::{State, get, launch, put, routes, serde::json::Json, tokio::sync::Mutex};
+use rocket::{State, fs::NamedFile, get, launch, put, routes, serde::json::Json, tokio::sync::Mutex};
 use serde::Deserialize;
 use sqlx::{Pool, Postgres};
 use tarascope::shader::KaleidoArgs;
@@ -53,6 +53,11 @@ async fn single(state: &State<ApiState>, id: &str) -> String {
     serde_json::to_string(&res).unwrap()
 }
 
+#[get("/")]
+async fn frontpage() -> Result<NamedFile, std::io::Error> {
+    NamedFile::open("index.html").await
+}
+
 #[launch]
 async fn rocket() -> _ {
     let _ = dotenv::dotenv().ok();
@@ -63,5 +68,6 @@ async fn rocket() -> _ {
         .manage(ApiState {
             pool: Arc::new(Mutex::new(pool)),
         })
+        .mount("/", routes![frontpage])
         .mount("/api", routes![full, single, new, random])
 }

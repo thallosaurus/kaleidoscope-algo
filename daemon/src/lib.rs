@@ -6,6 +6,7 @@ use std::{
 
 use clap::Parser;
 use clap_derive::Parser;
+use log::debug;
 use sqlx::{Pool, Postgres, postgres::PgListener};
 use tarascope::{
     Tarascope,
@@ -61,8 +62,8 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                 let ch = msg.channel();
                 let data = msg.payload();
                 match ch {
-                    "test" => println!("test notif!"),
-                    "test2" => println!("test2 notif!"),
+                    "test" => debug!("test notif!"),
+                    "test2" => debug!("test2 notif!"),
 
                     // database sent request for image generation, add to queue
                     "generate_random" => {
