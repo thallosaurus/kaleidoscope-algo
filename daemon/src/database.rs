@@ -29,8 +29,15 @@ pub async fn all_kaleidoscopes(pool: &Pool<Postgres>) -> Result<Vec<Showcase>, B
     let d = sqlx::query_as::<_, Showcase>("SELECT id::text, video, gif, thumbnail, ts::timestamp FROM showcase ORDER BY ts DESC")
     .fetch_all(pool)
     .await?;
-/* .map(|row: PgRow| {
-    */
+
+    Ok(d)
+}
+
+pub async fn single_kaleidoscopes(pool: &Pool<Postgres>, id: &String) -> Result<Vec<Showcase>, Box<dyn Error>> {
+    let d = sqlx::query_as::<_, Showcase>("SELECT id::text, video, gif, thumbnail, ts::timestamp FROM showcase WHERE id = uuid($1) ORDER BY ts DESC")
+    .bind(id)
+    .fetch_all(pool)
+    .await?;
 
     Ok(d)
 }

@@ -2,7 +2,7 @@ use std::io::Error;
 
 use clap::{Parser, command};
 use clap_derive::{Parser, Subcommand};
-use tarascope::{CommandType, Tarascope, shader::KaleidoArgs};
+use tarascope::{CommandType, Tarascope, encoder::stitch_video, shader::KaleidoArgs};
 use serde::Serialize;
 use tokio::sync::mpsc::unbounded_channel;
 
@@ -39,6 +39,8 @@ async fn main() -> Result<(), Error> {
         CliModes::Custom(kaleido_args) => kaleido_args,
     };
 
+    let id = kargs.get_id();
+
     let c = CommandType::Animated(1, 10, kargs);
 
     let output = tarascopes.start_render(c, sender).await?;
@@ -46,6 +48,6 @@ async fn main() -> Result<(), Error> {
     //let cmd = run_kaleidoscope(output_args.output_dir, &kargs, sender).await?;
     println!("{}", output.exit_status);
 
-    //stitch_video(&kargs).unwrap();
+    stitch_video(&tarascopes.paths_for_job(&id)).unwrap();
     Ok(())
 }

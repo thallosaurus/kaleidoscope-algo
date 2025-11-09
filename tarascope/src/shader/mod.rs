@@ -61,9 +61,6 @@ pub struct KaleidoArgs {
 
     //#[clap(flatten)]
     //output: OutputArgs,
-
-    #[arg(short, long)]
-    animate: bool,
 }
 
 impl KaleidoArgs {
@@ -75,7 +72,6 @@ impl KaleidoArgs {
             frames: FrameArgs::default(),
             id: Uuid::new_v4().to_string(),
             //output: OutputArgs { output_dir },
-            animate: false,
         }
     }
 
@@ -116,7 +112,6 @@ impl KaleidoArgs {
             //output: OutputArgs {
             //    output_dir: String::new(),
             //},
-            animate: true,
         })
     }
 

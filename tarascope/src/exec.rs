@@ -14,10 +14,6 @@ use tokio::{
 
 use crate::{RenderJobDirectories, shader::KaleidoArgs};
 
-struct RenderExecutor {
-    
-}
-
 /// Runs the blender executor
 pub async fn run(
     cmd: &mut Command,
