@@ -2,7 +2,7 @@ use std::error::Error;
 
 use log::debug;
 use tarascope::{CommandType, RenderStatus, shader::KaleidoArgs};
-use tokio::{sync::mpsc::{Receiver, Sender, channel, error::TrySendError, unbounded_channel}, task::JoinHandle};
+use tokio::{sync::mpsc::{Receiver, Sender, UnboundedReceiver, UnboundedSender, channel, error::TrySendError, unbounded_channel}, task::JoinHandle};
 
 use crate::{SharedDatabasePool, SharedTarascope, database::{get_specific_job_parameters, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done, set_kaleidoscope_to_waiting}};
 
@@ -11,9 +11,13 @@ pub enum RenderQueueRequest {
     ParameterizedAnimated(String),
 }
 
+pub enum RenderQueueError {
+    QueuePushError
+}
+
 pub struct RenderQueue {
     pool: SharedDatabasePool,
-    queue_sender: Sender<RenderQueueRequest>,
+    queue_sender: UnboundedSender<RenderQueueRequest>,
     _handle: JoinHandle<()>,
 }
 
@@ -22,7 +26,7 @@ static MAX_QUEUE_ITEMS: usize = 1;
 impl RenderQueue {
     pub fn new(pool: SharedDatabasePool, executor: SharedTarascope) -> Self {
         // for the start allocate a size 2 render
-        let (queue_sender, mut rx) = channel::<RenderQueueRequest>(MAX_QUEUE_ITEMS);
+        let (queue_sender, mut rx) = unbounded_channel::<RenderQueueRequest>();
 
         Self {
             pool: pool.clone(),
@@ -33,7 +37,7 @@ impl RenderQueue {
 
     fn task(
         pool: SharedDatabasePool,
-        mut rx: Receiver<RenderQueueRequest>,
+        mut rx: UnboundedReceiver<RenderQueueRequest>,
         executor: SharedTarascope,
     ) -> JoinHandle<()> {
         // render queue task
@@ -142,11 +146,12 @@ impl RenderQueue {
         Ok(())
     }
 
-    pub fn push(&self, request: RenderQueueRequest) -> Result<(), TrySendError<RenderQueueRequest>> {
-        debug!("queue capacity: {}", self.queue_sender.capacity());
-        if let Err(e) = self.queue_sender.try_send(request) {
+    pub fn push(&self, request: RenderQueueRequest) -> Result<(), RenderQueueError> {
+        //debug!("queue capacity: {}", self.queue_sender.capacity());
+        if let Err(e) = self.queue_sender.send(request) {
             eprintln!("error while adding task to render queue: {}", e);
-            Err(e)
+            Err(RenderQueueError::QueuePushError)
+            //Err(e)
         } else {
             Ok(())
         }
