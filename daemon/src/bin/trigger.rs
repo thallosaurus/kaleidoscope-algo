@@ -1,11 +1,12 @@
 use std::error::Error;
 
 use daemon::database::{init_database, trigger_generation};
-use tarascope::shader::KaleidoArgs;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let _ = dotenv::dotenv().ok();
+
+    simple_logger::init()?;
     
     let pool = init_database().await?;
     Ok(trigger_generation(&pool).await?)

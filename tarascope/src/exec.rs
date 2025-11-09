@@ -12,7 +12,7 @@ use tokio::{
     sync::{Mutex, mpsc::UnboundedSender},
 };
 
-use crate::shader::KaleidoArgs;
+use crate::{RenderJobDirectories, shader::KaleidoArgs};
 
 struct RenderExecutor {
     
@@ -21,7 +21,7 @@ struct RenderExecutor {
 /// Runs the blender executor
 pub async fn run(
     cmd: &mut Command,
-    kargs: &KaleidoArgs,
+    dirs: &RenderJobDirectories,
     sender: UnboundedSender<String>,
 ) -> io::Result<ExitStatus> {
     let (writer, reader) = pipe::pipe()?;
@@ -40,7 +40,7 @@ pub async fn run(
     let mut ccmd = cmd.spawn()?;
 
     let stdout = ccmd.stdout.take().unwrap();
-    let stdout_path = kargs.blender_stdout_path();
+    let stdout_path = dirs.blender_stdout_path();
     let stdout_task = tokio::spawn(async move {
         let mut log = File::create(stdout_path)
             .await
@@ -65,7 +65,7 @@ pub async fn run(
     });
 
     let stderr = ccmd.stderr.take().unwrap();
-    let stderr_path = kargs.blender_stderr_path();
+    let stderr_path = dirs.blender_stderr_path();
     let stderr_task = tokio::spawn(async move {
         let mut log = File::create(stderr_path)
             .await

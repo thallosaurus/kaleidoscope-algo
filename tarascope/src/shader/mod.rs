@@ -59,23 +59,22 @@ pub struct KaleidoArgs {
     #[clap(skip = Uuid::new_v4().to_string())]
     id: String,
 
-    #[clap(flatten)]
-    output: OutputArgs,
+    //#[clap(flatten)]
+    //output: OutputArgs,
 
     #[arg(short, long)]
     animate: bool,
 }
 
 impl KaleidoArgs {
-    pub fn random(output_dir: String) -> Self {
-        println!("[DEBUG] {}", output_dir);
+    pub fn random() -> Self {
         Self {
             texture: TextureSelector::random(),
             polar: PolarArgs::random(),
             composite: CompositeArgs::random(),
             frames: FrameArgs::default(),
             id: Uuid::new_v4().to_string(),
-            output: OutputArgs { output_dir },
+            //output: OutputArgs { output_dir },
             animate: false,
         }
     }
@@ -83,7 +82,7 @@ impl KaleidoArgs {
     pub fn json(&self) -> Value {
         json!({
             "id": self.get_id(),
-            "output_directory": self.output_dir(),
+            //"output_directory": self.output_dir(),
             "texture_index": self.texture.get_index(),
             "repetition": self.polar.repetition,
             "scaling": self.polar.scaling,
@@ -114,9 +113,9 @@ impl KaleidoArgs {
             },
             composite: CompositeArgs::from_json(&v["composite"])?,
             frames: FrameArgs::from_json(&v["frames"])?,
-            output: OutputArgs {
-                output_dir: String::new(),
-            },
+            //output: OutputArgs {
+            //    output_dir: String::new(),
+            //},
             animate: true,
         })
     }
@@ -125,24 +124,25 @@ impl KaleidoArgs {
         BASE64_STANDARD.encode(self.json().to_string())
     }
 
-    pub fn get_start_frame(&self) -> u16 {
+    /*pub fn get_start_frame(&self) -> u16 {
         self.frames.frame_start
     }
     pub fn get_end_frame(&self) -> u16 {
         self.frames.frame_end
-    }
+    }*/
 
     pub fn get_id(&self) -> String {
         self.id.clone()
     }
+    
 
-    pub fn output_dir(&self) -> String {
+    /*pub fn output_dir(&self) -> String {
         /*let cwd = env::current_dir().expect("cannot access current working directory");
         let p = cwd.as_path().to_str().unwrap();*/
         self.output.output_dir.clone()
-    }
+    }*/
 
-    pub fn project_folder_path(&self) -> String {
+    /*pub fn project_folder_path(&self) -> String {
         format!("{}/{}", self.output_dir(), self.get_id())
     }
 
@@ -168,7 +168,7 @@ impl KaleidoArgs {
 
     pub fn blender_native_log_path(&self) -> String {
         format!("{}/blender.log", self.project_folder_path())
-    }
+    }*/
 }
 
 fn repetition_range() -> RangeInclusive<u8> {

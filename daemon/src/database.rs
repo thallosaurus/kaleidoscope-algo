@@ -44,7 +44,7 @@ pub async fn register_new_kaleidoscope(
 
 pub async fn set_kaleidoscope_to_waiting(
     pool: &Pool<Postgres>,
-    id: String,
+    id: &String,
 ) -> Result<(), Box<dyn Error>> {
     sqlx::query("UPDATE public.tarascope SET status=1 WHERE id = uuid($1)")
         .bind(id)
@@ -54,7 +54,7 @@ pub async fn set_kaleidoscope_to_waiting(
 }
 async fn set_kaleidoscope_to_running(
     pool: &Pool<Postgres>,
-    id: String,
+    id: &String,
 ) -> Result<(), Box<dyn Error>> {
     sqlx::query("UPDATE public.tarascope SET status=2 WHERE id = uuid($1)")
         .bind(id)
@@ -65,7 +65,7 @@ async fn set_kaleidoscope_to_running(
 
 async fn set_kaleidoscope_to_failed(
     pool: &Pool<Postgres>,
-    id: String,
+    id: &String,
 ) -> Result<(), Box<dyn Error>> {
     sqlx::query("UPDATE public.tarascope SET status=4 WHERE id = uuid($1)")
         .bind(id)
@@ -76,7 +76,7 @@ async fn set_kaleidoscope_to_failed(
 
 pub async fn set_kaleidoscope_to_done(
     pool: &Pool<Postgres>,
-    id: String,
+    id: &String,
 ) -> Result<(), Box<dyn Error>> {
     sqlx::query("UPDATE public.tarascope SET status=3 WHERE id = uuid($1)")
         .bind(id)
