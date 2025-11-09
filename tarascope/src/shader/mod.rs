@@ -129,41 +129,6 @@ impl KaleidoArgs {
     pub fn get_id(&self) -> String {
         self.id.clone()
     }
-    
-
-    /*pub fn output_dir(&self) -> String {
-        /*let cwd = env::current_dir().expect("cannot access current working directory");
-        let p = cwd.as_path().to_str().unwrap();*/
-        self.output.output_dir.clone()
-    }*/
-
-    /*pub fn project_folder_path(&self) -> String {
-        format!("{}/{}", self.output_dir(), self.get_id())
-    }
-
-    pub fn blender_stdout_path(&self) -> String {
-        format!("{}/blender.stdout.log", self.project_folder_path())
-    }
-
-    pub fn blender_stderr_path(&self) -> String {
-        format!("{}/blender.stderr.log", self.project_folder_path())
-    }
-
-    pub fn parameters_path(&self) -> String {
-        format!("{}/parameters.json", self.project_folder_path())
-    }
-
-    pub fn blender_project_path(&self) -> String {
-        format!("{}/project.blend", self.project_folder_path())
-    }
-
-    pub fn blender_frame_path(&self) -> String {
-        format!("{}/frame_#####", self.project_folder_path())
-    }
-
-    pub fn blender_native_log_path(&self) -> String {
-        format!("{}/blender.log", self.project_folder_path())
-    }*/
 }
 
 fn repetition_range() -> RangeInclusive<u8> {

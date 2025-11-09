@@ -4,8 +4,7 @@ use daemon::database::{
     all_kaleidoscopes, init_database, insert_new_parameterized_job, single_kaleidoscopes,
 };
 use handlebars::Handlebars;
-use rocket::{State, fs::NamedFile, get, launch, put, response::content::RawHtml, routes, serde::json::Json, tokio::sync::Mutex};
-use serde::Deserialize;
+use rocket::{State, get, launch, put, response::content::RawHtml, routes, serde::json::Json, tokio::sync::Mutex};
 use serde_json::{Map, json};
 use sqlx::{Pool, Postgres};
 use tarascope::shader::KaleidoArgs;

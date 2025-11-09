@@ -36,7 +36,7 @@ fn main() {
 }
 
 fn model(app: &App) -> Model {
-    let w_id = app.new_window().size(512, 512).view(view).build().unwrap();
+    let w_id = app.new_window().size(1024, 1024).view(view).build().unwrap();
 
     // The gpu device associated with the window's swapchain
     let window = app.window(w_id).unwrap();
