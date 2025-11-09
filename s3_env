@@ -1,0 +1,2 @@
+alias garage="docker compose exec -ti storage /garage"
+alias mc="docker compose exec -ti minio mc"
