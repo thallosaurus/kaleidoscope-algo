@@ -2,7 +2,7 @@ use std::io::Error;
 
 use clap::{Parser, command};
 use clap_derive::{Parser, Subcommand};
-use tarascope::{encoder::stitch_video, run_kaleidoscope, shader::{KaleidoArgs, OutputArgs}};
+use tarascope::{CommandType, Tarascope, encoder::stitch_video, shader::KaleidoArgs};
 use serde::Serialize;
 use tokio::sync::mpsc::unbounded_channel;
 
@@ -14,14 +14,14 @@ struct CliArgs {
     mode: CliModes,
 
 
-    //#[arg(short, long)]
-    //output_dir: String,
+    #[arg(short, long)]
+    output_dir: String,
 }
 
 #[derive(Debug, Subcommand, Clone, Serialize)]
 enum CliModes {
     /// Randomized Kaleidoscope
-    Random(OutputArgs),
+    Random,
 
     /// Create a parameterized kaleidoscope
     Custom(KaleidoArgs),
@@ -32,14 +32,22 @@ async fn main() -> Result<(), Error> {
     let args = CliArgs::parse();
     let (sender, receiver) = unbounded_channel();
 
+    let tarascopes = Tarascope::new(String::from(args.output_dir));
+
     let kargs = match args.mode {
-        CliModes::Random(output_args) => KaleidoArgs::random(output_args),
+        CliModes::Random => KaleidoArgs::random(),
         CliModes::Custom(kaleido_args) => kaleido_args,
     };
 
-    let cmd = run_kaleidoscope(&kargs, sender).await?;
-    println!("{}", cmd.exit_status);
+    let id = kargs.get_id();
 
-    stitch_video(&kargs).unwrap();
+    let c = CommandType::Animated(1, 10, kargs);
+
+    let output = tarascopes.start_render(c, sender).await?;
+
+    //let cmd = run_kaleidoscope(output_args.output_dir, &kargs, sender).await?;
+    println!("{}", output.exit_status);
+
+    stitch_video(&tarascopes.paths_for_job(&id)).unwrap();
     Ok(())
 }

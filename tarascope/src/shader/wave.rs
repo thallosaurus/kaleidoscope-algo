@@ -1,33 +1,54 @@
+use std::ops::RangeInclusive;
+
 use clap_derive::Parser;
 use rand::random_range;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-#[derive(Parser, Debug, Clone, Serialize)]
+use crate::shader::{ParseError, parse_f64, validate_range};
+
+#[derive(Parser, Debug, Clone, Serialize, Deserialize)]
 pub struct WaveArgs {
     #[arg(long)]
     scale: f32,
-    
+
     #[arg(long)]
     distortion: f32,
-    
+
     #[arg(long)]
     detail: f32,
-    
+
     #[arg(long)]
     detail_roughness: f32,
-    
+
     #[arg(long)]
     phase_offset: f32,
 }
 
+fn scale_range() -> RangeInclusive<f32> {
+    0.2..=5.0
+}
+fn distortion_range() -> RangeInclusive<f32> {
+    -10.0..=10.0
+}
+fn detail_range() -> RangeInclusive<f32> {
+    0.0..=5.0
+}
+fn detail_roughness_range() -> RangeInclusive<f32> {
+    0.0..=1.0
+}
+fn phase_offset_range() -> RangeInclusive<f32> {
+    0.0..=50.0
+}
+
 impl WaveArgs {
     pub fn random() -> Self {
-        Self {scale: random_range(0.2..=5.0),
-            distortion: random_range(-10.0..=10.0),
-            detail: random_range(0.0..=5.0),
-            detail_roughness: random_range(0.0..=1.0),
-            phase_offset: random_range(0.0..=50.0)
+        Self {
+            scale: random_range(scale_range()),
+            distortion: random_range(distortion_range()),
+            detail: random_range(detail_range()),
+            detail_roughness: random_range(detail_roughness_range()),
+            phase_offset: random_range(phase_offset_range()),
         }
     }
     pub fn json(&self) -> Value {
@@ -37,6 +58,24 @@ impl WaveArgs {
             "wave_detail": self.detail,
             "wave_detail_roughness": self.detail_roughness,
             "wave_phase_offset": self.phase_offset
+        })
+    }
+
+    pub fn from_json(v: &Value) -> Result<Self, ParseError> {
+        let detail = validate_range(parse_f64(v, "wave_detail")? as f32, detail_range())?;
+        let scale = validate_range(parse_f64(v, "wave_scale")? as f32, scale_range())?;
+        let distortion = validate_range(parse_f64(v, "wave_distortion")? as f32, distortion_range())?;
+        let detail_roughness =
+            validate_range(parse_f64(v, "wave_detail_roughness")? as f32, detail_roughness_range())?;
+        let phase_offset =
+            validate_range(parse_f64(v, "wave_phase_offset")? as f32, phase_offset_range())?;
+
+        Ok(Self {
+            scale,
+            distortion,
+            detail,
+            detail_roughness,
+            phase_offset,
         })
     }
 }

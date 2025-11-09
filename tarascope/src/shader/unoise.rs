@@ -1,9 +1,13 @@
+use std::ops::RangeInclusive;
+
 use clap_derive::Parser;
 use rand::random_range;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
-#[derive(Parser, Debug, Clone, Serialize)]
+use crate::shader::{ParseError, parse_f64, validate_range};
+
+#[derive(Parser, Debug, Clone, Serialize, Deserialize)]
 pub struct UnoiseArgs {
     scale: f32,
     detail: f32,
@@ -12,16 +16,31 @@ pub struct UnoiseArgs {
     distortion: f32,
 }
 
-impl UnoiseArgs {
+fn scale_range() -> RangeInclusive<f32> {
+    1.0..=15.0
+}
+fn detail_range() -> RangeInclusive<f32> {
+    0.0..=5.0
+}
+fn roughness_range() -> RangeInclusive<f32> {
+    0.0..=1.0
+}
+fn lacunarity_range() -> RangeInclusive<f32> {
+    0.0..=10.0
+}
+fn distortion_range() -> RangeInclusive<f32> {
+    0.0..=10.0
+}
 
+impl UnoiseArgs {
     #[deprecated]
     pub fn random() -> Self {
         Self {
-            scale: random_range(1.0..=15.0),
-            detail: random_range(0.0..=5.0),
-            roughness: random_range(0.0..=1.0),
-            lacunarity: random_range(0.0..=10.0),
-            distortion: random_range(0.0..=10.0),
+            scale: random_range(scale_range()),
+            detail: random_range(detail_range()),
+            roughness: random_range(roughness_range()),
+            lacunarity: random_range(lacunarity_range()),
+            distortion: random_range(distortion_range()),
         }
     }
 
@@ -32,6 +51,29 @@ impl UnoiseArgs {
             "unoise_roughness": self.roughness,
             "unoise_lacunarity": self.lacunarity,
             "unoise_distortion": self.distortion
+        })
+    }
+
+    pub fn from_json(v: &Value) -> Result<Self, ParseError> {
+        let scale = validate_range(parse_f64(v, "unoise_scale")? as f32, scale_range())?;
+        let detail = validate_range(parse_f64(v, "unoise_detail")? as f32, detail_range())?;
+        let roughness =
+            validate_range(parse_f64(v, "unoise_roughness")? as f32, roughness_range())?;
+        let lacunarity = validate_range(
+            parse_f64(v, "unoise_lacunarity")? as f32,
+            lacunarity_range(),
+        )?;
+        let distortion = validate_range(
+            parse_f64(v, "unoise_distortion")? as f32,
+            distortion_range(),
+        )?;
+
+        Ok(Self {
+            scale,
+            detail,
+            roughness,
+            lacunarity,
+            distortion,
         })
     }
 }

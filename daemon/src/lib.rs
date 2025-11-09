@@ -1,30 +1,26 @@
-use std::{error::Error, rc::Rc, sync::Arc};
+use std::{
+    env::current_dir,
+    error::Error,
+    sync::{Arc, OnceLock},
+};
 
 use clap::Parser;
 use clap_derive::Parser;
+use log::debug;
 use sqlx::{Pool, Postgres, postgres::PgListener};
 use tarascope::{
-    RenderStatus,
-    encoder::stitch_video,
-    run_kaleidoscope,
-    shader::{KaleidoArgs, OutputArgs},
+    Tarascope,
+    shader::OutputArgs,
 };
-use tokio::sync::{
-    Mutex,
-    mpsc::{self, unbounded_channel},
-};
+use tokio::sync::Mutex;
 
-use crate::database::{
-    init_database, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done,
-};
+use crate::{database::init_database, queue::{RenderQueue, RenderQueueRequest}};
 
 pub mod database;
+mod queue;
 
-static MAX_QUEUE_ITEMS: usize = 1;
-
-enum RenderQueueRequest {
-    Random,
-}
+pub type SharedDatabasePool = Arc<Mutex<Pool<Postgres>>>;
+pub type SharedTarascope = Arc<Mutex<Tarascope>>;
 
 /// Generate and store kaleidoscopes in postgres
 #[derive(Parser, Debug, Clone)]
@@ -45,57 +41,39 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     listener.listen("test").await?;
     listener.listen("test2").await?;
     listener.listen("generate_random").await?;
+    listener.listen("queue_parameter").await?;
 
+    
+    let tarascopes = Arc::new(Mutex::new(Tarascope::new(String::from(
+        args.out.output_dir,
+    ))));
+    
     let r_pool = Arc::new(Mutex::new(pool));
-    let r_args = Arc::new(Mutex::new(args));
-
-    // for the start allocate a size 2 render
-    let (tx, mut rx) = mpsc::channel::<RenderQueueRequest>(MAX_QUEUE_ITEMS);
-
-    // render queue task
-    let _queue_task = tokio::spawn(async move {
-        let pool = r_pool.clone();
-        let args = r_args.clone();
-        loop {
-            if let Some(req) = rx.recv().await {
-                match req {
-                    RenderQueueRequest::Random => {
-                        println!("Starting new random job");
-                        let pool = pool.lock().await;
-                        let args = args.lock().await;
-                        render(&pool, &args).await.unwrap();
-                        //tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-                        println!("Finished Render Job");
-                    }
-                }
-            } else {
-                println!("queue closed");
-                break;
-            }
-        }
-    });
+    let render_queue = RenderQueue::new(r_pool, tarascopes);
 
     // main event loop
+    // listens for database notifications and acts upon them.
+    // Spawns the tasks responsible for rendering
     loop {
-        //let r_pool = r_pool.clone();
-        //let r_args = r_args.clone();
         tokio::select! {
             Ok(Some(msg)) = listener.try_recv() => {
                 // got notification
 
                 let ch = msg.channel();
+                let data = msg.payload();
                 match ch {
-                    "test" => println!("test notif!"),
-                    "test2" => println!("test2 notif!"),
+                    "test" => debug!("test notif!"),
+                    "test2" => debug!("test2 notif!"),
 
                     // database sent request for image generation, add to queue
                     "generate_random" => {
-                        println!("queue capacity: {}", tx.capacity());
-                        if let Err(e) = tx.try_send(RenderQueueRequest::Random) {
-                            eprintln!("render queue is full! {}", e);
+                        if let Err(e) = render_queue.push(RenderQueueRequest::RandomAnimated) {
                             continue;
-                        } else {
-                            println!("queued next random generation");
+                        }
+                    },
+                    "queue_parameter" =>  {
+                        if let Err(e) = render_queue.push(RenderQueueRequest::ParameterizedAnimated(String::from(data))) {
+                            continue;
                         }
                     },
                     _ => {
@@ -105,42 +83,4 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-}
-
-async fn render(pool: &Pool<Postgres>, args: &Args) -> Result<(), Box<dyn Error>> {
-    //let pool = init_database().await.unwrap();
-    let (sender, receiver) = unbounded_channel::<String>();
-
-    //let out = args.out.clone();
-
-    let kaleidoargs = KaleidoArgs::random(args.out.clone());
-
-    // status task
-    let p = pool.clone();
-    tokio::spawn(async move {
-        let mut receiver = receiver;
-        loop {
-            if let Some(msg) = receiver.recv().await {
-                println!("{:?}", msg);
-
-                let data: RenderStatus = serde_json::from_str(msg.as_str()).unwrap();
-                insert_frame(&p, data).await.unwrap();
-                continue;
-            } else {
-                break;
-            }
-        }
-    });
-
-    let j = kaleidoargs.json();
-    register_new_kaleidoscope(&pool, kaleidoargs.get_id(), j.to_string()).await?;
-
-    let output = run_kaleidoscope(&kaleidoargs, sender).await?;
-
-    if output.exit_status.success() {
-        stitch_video(&kaleidoargs).unwrap();
-        set_kaleidoscope_to_done(&pool, kaleidoargs.get_id()).await?;
-    }
-
-    Ok(())
 }
