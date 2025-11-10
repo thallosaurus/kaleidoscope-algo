@@ -41,8 +41,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     listener.listen("test").await?;
     listener.listen("test2").await?;
     listener.listen("generate_random").await?;
-    listener.listen("queue_parameter").await?;
-
+    listener.listen("queue_parameters").await?;
     
     let tarascopes = Arc::new(Mutex::new(Tarascope::new(String::from(
         args.out.output_dir,
@@ -71,7 +70,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                             continue;
                         }
                     },
-                    "queue_parameter" =>  {
+                    "queue_parameters" =>  {
                         if let Err(e) = render_queue.push(RenderQueueRequest::ParameterizedAnimated(String::from(data))) {
                             continue;
                         }

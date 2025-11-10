@@ -138,7 +138,7 @@ pub async fn insert_new_parameterized_job(
     let id = kargs.get_id();
     register_new_kaleidoscope(pool, &id, kargs.json().to_string()).await?;
 
-    sqlx::query("SELECT pg_notify('queue_parameter', $1)")
+    sqlx::query("SELECT pg_notify('queue_parameters', $1)")
         .bind(id)
         .execute(pool)
         .await?;
