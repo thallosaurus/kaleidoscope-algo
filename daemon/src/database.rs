@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::{
     Pool, Postgres,
-    postgres::{PgPoolOptions, PgRow, types}, prelude::FromRow
+    postgres::{PgPoolOptions, PgRow, types},
+    prelude::FromRow,
 };
 use tarascope::{RenderStatus, shader::KaleidoArgs};
 
@@ -26,14 +27,19 @@ pub async fn init_database() -> Result<Pool<Postgres>, Box<dyn Error>> {
 }
 
 pub async fn all_kaleidoscopes(pool: &Pool<Postgres>) -> Result<Vec<Showcase>, Box<dyn Error>> {
-    let d = sqlx::query_as::<_, Showcase>("SELECT id::text, video, gif, thumbnail, ts::timestamp FROM showcase ORDER BY ts DESC")
+    let d = sqlx::query_as::<_, Showcase>(
+        "SELECT id::text, video, gif, thumbnail, ts::timestamp FROM showcase ORDER BY ts DESC",
+    )
     .fetch_all(pool)
     .await?;
 
     Ok(d)
 }
 
-pub async fn single_kaleidoscopes(pool: &Pool<Postgres>, id: &String) -> Result<Vec<Showcase>, Box<dyn Error>> {
+pub async fn single_kaleidoscopes(
+    pool: &Pool<Postgres>,
+    id: &String,
+) -> Result<Vec<Showcase>, Box<dyn Error>> {
     let d = sqlx::query_as::<_, Showcase>("SELECT id::text, video, gif, thumbnail, ts::timestamp FROM showcase WHERE id = uuid($1) ORDER BY ts DESC")
     .bind(id)
     .fetch_all(pool)
@@ -49,7 +55,7 @@ pub struct Showcase {
     video: String,
     gif: String,
     thumbnail: String,
-    ts: NaiveDateTime
+    ts: NaiveDateTime,
 }
 
 pub async fn trigger_generation(pool: &Pool<Postgres>) -> Result<(), Box<dyn Error>> {
@@ -153,4 +159,15 @@ pub async fn get_specific_job_parameters(
     println!("db: {:?}", vvvv);
 
     Ok(KaleidoArgs::from_json(vvvv).unwrap())
+}
+
+pub async fn todays_done_jobs(
+    pool: &Pool<Postgres>,
+) -> Result<Vec<(String, String)>, Box<dyn Error>> {
+    let q: Vec<(String, String)> = sqlx::query_as(
+        "SELECT id::text, thumbnail from showcase where cast(ts as DATE) = cast(now() as DATE)",
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(q)
 }
