@@ -157,7 +157,23 @@ impl CommandType {
                 //.arg(encoded);
                 cmd
             }
-            CommandType::Still(frame, args) => todo!(),
+            CommandType::Still(frame, args) => {
+                let mut cmd = Command::new(BLENDER_PATH);
+                cmd.arg(project.as_os_str())
+                    .arg("--factory-startup")
+                    .arg("-o")
+                    .arg(dirs.blender_frame_path())
+                    .arg("-Y")
+                    .arg("-P")
+                    .arg(loader.as_os_str())
+                    .arg("-f")
+                    .arg(frame.to_string())
+                    .arg("-b")
+                    .arg("--");
+
+                cmd
+                // ./tarascope/kaleido.blend --factory-startup -b -f -o output/test.png
+            }
         }
     }
     fn project_args(&self) -> KaleidoArgs {
@@ -216,8 +232,7 @@ impl Tarascope {
         let mut cmd = c.command(tmp_project_path, tmp_loader_path, &dirs);
 
         // Append projectdata
-        cmd
-            .arg(encoded);
+        cmd.arg(encoded);
         // wait until the render has finished
         //let output = child.wait_with_output()?;
 
