@@ -73,13 +73,22 @@ impl RenderQueue {
                             drop(lock);
 
                             //render_tasks(&pool, &job).await.unwrap();
-                            Self::render(
+                            let output = Self::render(
                                 pool.clone(),
                                 CommandType::Animated(1, 300, job),
                                 executor.clone(),
                             )
                             .await
                             .unwrap();
+
+                        if output.exit_status.success() {
+                                let t_lock = executor.lock().await;
+                                let dirs = t_lock.paths_for_job(&id);
+                                stitch_video(&dirs).unwrap();
+                                let lock = pool.lock().await;
+                                set_kaleidoscope_to_done(&lock, &id).await.unwrap();
+                                drop(lock);
+                            }
                             //tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                             info!("Finished Render Job");
                         }
