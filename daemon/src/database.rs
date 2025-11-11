@@ -145,6 +145,20 @@ pub async fn insert_new_parameterized_job(
     Ok(())
 }
 
+pub async fn insert_new_parameterized_still_job(
+    pool: &Pool<Postgres>,
+    kargs: KaleidoArgs,
+) -> Result<(), Box<dyn Error>> {
+    let id = kargs.get_id();
+    register_new_kaleidoscope(pool, &id, kargs.json().to_string()).await?;
+
+    sqlx::query("SELECT pg_notify('queue_still', $1)")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 pub async fn get_specific_job_parameters(
     pool: &Pool<Postgres>,
     id: &String,

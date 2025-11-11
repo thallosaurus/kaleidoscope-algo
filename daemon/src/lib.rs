@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 use clap_derive::Parser;
-use log::debug;
+use log::{debug, info};
 use sqlx::{Pool, Postgres, postgres::PgListener};
 use tarascope::{
     Tarascope,
@@ -42,6 +42,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     listener.listen("test2").await?;
     listener.listen("generate_random").await?;
     listener.listen("queue_parameters").await?;
+    listener.listen("queue_still").await?;
     
     let tarascopes = Arc::new(Mutex::new(Tarascope::new(String::from(
         args.out.output_dir,
@@ -75,6 +76,11 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                             continue;
                         }
                     },
+                    "queue_still" =>  {
+                        if let Err(e) = render_queue.push(RenderQueueRequest::ParameterizedStill(String::from(data))) {
+                            continue;
+                        }
+                    },
                     _ => {
                         println!("unknown channel notification ({})", ch)
                     }
@@ -82,4 +88,5 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
             }
         }
     }
+    info!("database listener closed");
 }

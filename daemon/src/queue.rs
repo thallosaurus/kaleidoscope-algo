@@ -1,18 +1,31 @@
 use std::error::Error;
 
 use log::{debug, error, info};
-use tarascope::{CommandType, RenderStatus, encoder::stitch_video, shader::KaleidoArgs};
-use tokio::{sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel}, task::JoinHandle};
+use tarascope::{
+    CommandType, KaleidoOutput, RenderStatus, encoder::stitch_video, shader::KaleidoArgs,
+};
+use tokio::{
+    sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel},
+    task::JoinHandle,
+};
 
-use crate::{SharedDatabasePool, SharedTarascope, database::{get_specific_job_parameters, insert_frame, register_new_kaleidoscope, set_kaleidoscope_to_done, set_kaleidoscope_to_waiting}};
+use crate::{
+    SharedDatabasePool, SharedTarascope,
+    database::{
+        get_specific_job_parameters, insert_frame, register_new_kaleidoscope,
+        set_kaleidoscope_to_done, set_kaleidoscope_to_waiting,
+    },
+};
 
+#[derive(Debug)]
 pub enum RenderQueueRequest {
     RandomAnimated,
     ParameterizedAnimated(String),
+    ParameterizedStill(String),
 }
 
 pub enum RenderQueueError {
-    QueuePushError
+    QueuePushError,
 }
 
 pub struct RenderQueue {
@@ -60,13 +73,22 @@ impl RenderQueue {
                             drop(lock);
 
                             //render_tasks(&pool, &job).await.unwrap();
-                            Self::render(
+                            let output = Self::render(
                                 pool.clone(),
                                 CommandType::Animated(1, 300, job),
                                 executor.clone(),
                             )
                             .await
                             .unwrap();
+
+                        if output.exit_status.success() {
+                                let t_lock = executor.lock().await;
+                                let dirs = t_lock.paths_for_job(&id);
+                                stitch_video(&dirs).unwrap();
+                                let lock = pool.lock().await;
+                                set_kaleidoscope_to_done(&lock, &id).await.unwrap();
+                                drop(lock);
+                            }
                             //tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                             info!("Finished Render Job");
                         }
@@ -76,14 +98,45 @@ impl RenderQueue {
                             drop(lock);
                             info!("Starting new parameterized job {}", id);
                             //render_tasks(&pool, &job).await.unwrap();
-                            Self::render(
+                            let output = Self::render(
                                 pool.clone(),
                                 CommandType::Animated(1, 300, job),
                                 executor.clone(),
                             )
                             .await
                             .unwrap();
+
+                            if output.exit_status.success() {
+                                let t_lock = executor.lock().await;
+                                let dirs = t_lock.paths_for_job(&id);
+                                stitch_video(&dirs).unwrap();
+                                let lock = pool.lock().await;
+                                set_kaleidoscope_to_done(&lock, &id).await.unwrap();
+                                drop(lock);
+                            }
                             info!("Finished Render Job");
+                        }
+                        RenderQueueRequest::ParameterizedStill(id) => {
+                            let lock = pool.lock().await;
+                            let job = get_specific_job_parameters(&lock, &id).await.unwrap();
+                            drop(lock);
+                            info!("Starting new parameterized still job {}", id);
+                            let output = Self::render(
+                                pool.clone(),
+                                // only render the first frame
+                                // TODO ?
+                                CommandType::Still(0, job),
+                                executor.clone(),
+                            )
+                            .await
+                            .unwrap();
+                        
+                            if output.exit_status.success() {
+                                let lock = pool.lock().await;
+                                set_kaleidoscope_to_done(&lock, &id).await.unwrap();
+                                drop(lock);
+                            }
+                            info!("Finished Still Render Job");
                         }
                     }
                 } else {
@@ -98,7 +151,7 @@ impl RenderQueue {
         pool: SharedDatabasePool,
         job: CommandType,
         executor: SharedTarascope,
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<KaleidoOutput, Box<dyn Error>> {
         let id = job.get_job_id();
         let (sender, receiver) = unbounded_channel::<String>();
 
@@ -133,19 +186,12 @@ impl RenderQueue {
         let t_lock = executor.lock().await;
         let output = t_lock.start_render(job, sender).await?;
 
-        if output.exit_status.success() {
-            let dirs = t_lock.paths_for_job(&id);
-            stitch_video(&dirs).unwrap();
-            let lock = pool.lock().await;
-            set_kaleidoscope_to_done(&lock, &id).await?;
-            drop(lock);
-        }
-
-        Ok(())
+        Ok(output)
     }
 
     pub fn push(&self, request: RenderQueueRequest) -> Result<(), RenderQueueError> {
         //debug!("queue capacity: {}", self.queue_sender.capacity());
+        debug!("Adding {:?} to the queue", request);
         if let Err(e) = self.queue_sender.send(request) {
             error!("error while adding task to render queue: {}", e);
             Err(RenderQueueError::QueuePushError)

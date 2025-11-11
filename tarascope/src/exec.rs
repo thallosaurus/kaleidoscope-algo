@@ -4,6 +4,7 @@ use std::{
 };
 
 use command_fds::{CommandFdExt, FdMapping};
+use log::{error, info};
 use tokio::{
     fs::File,
     io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader},
@@ -51,7 +52,7 @@ pub async fn run(
                 // EOF
                 Ok(0) => break,
                 Ok(s) => {
-                    println!("{}", stdout_buf.trim());
+                    info!("{}", stdout_buf.trim());
                     log.write_all(stdout_buf.as_bytes()).await.unwrap();
                     continue;
                 }
@@ -76,7 +77,7 @@ pub async fn run(
                 // EOF
                 Ok(0) => break,
                 Ok(s) => {
-                    println!("{}", stderr_buf.trim());
+                    error!("{}", stderr_buf.trim());
                     log.write_all(stderr_buf.as_bytes()).await.unwrap();
                     continue;
                 }
@@ -112,7 +113,7 @@ pub async fn run(
                 }
             }
             status = c.wait() => {
-                println!("Child exited: {:?}", status);
+                error!("Child exited: {:?}", status);
 
                 //stdout_task.await.unwrap();
                 let _ = tokio::join!(stdout_task, stderr_task);
