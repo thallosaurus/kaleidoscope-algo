@@ -18,6 +18,7 @@ use crate::{database::init_database, queue::{RenderQueue, RenderQueueRequest}};
 
 pub mod database;
 mod queue;
+pub mod ranking;
 
 pub type SharedDatabasePool = Arc<Mutex<Pool<Postgres>>>;
 pub type SharedTarascope = Arc<Mutex<Tarascope>>;
