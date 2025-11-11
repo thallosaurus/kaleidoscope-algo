@@ -5,7 +5,6 @@ use std::{
 };
 
 use clap::Parser;
-use clap_derive::Parser;
 use log::{debug, info};
 use sqlx::{Pool, Postgres, postgres::PgListener};
 use tarascope::{
@@ -18,6 +17,7 @@ use crate::{database::init_database, queue::{RenderQueue, RenderQueueRequest}};
 
 pub mod database;
 mod queue;
+pub mod publisher;
 
 pub type SharedDatabasePool = Arc<Mutex<Pool<Postgres>>>;
 pub type SharedTarascope = Arc<Mutex<Tarascope>>;
