@@ -6,9 +6,6 @@ use tarascope::shader::KaleidoArgs;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let _ = dotenv::dotenv().ok();
-    let kargs = KaleidoArgs::random();
-
-    println!("{:#?}", kargs.json());
     
     let pool = init_database().await?;
     let best = todays_done_jobs(&pool).await?;
