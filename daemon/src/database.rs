@@ -10,6 +10,8 @@ use sqlx::{
 };
 use tarascope::{RenderStatus, shader::KaleidoArgs};
 
+use crate::publisher::PostPermalink;
+
 pub async fn init_database() -> Result<Pool<Postgres>, Box<dyn Error>> {
     let host = var("PG_HOST").unwrap_or("localhost".to_string());
     let username = var("PG_USER").unwrap_or("postgres".to_string());
@@ -184,4 +186,17 @@ pub async fn todays_done_jobs(
     .fetch_all(pool)
     .await?;
     Ok(q)
+}
+
+pub async fn insert_instagram_post(
+    pool: &Pool<Postgres>,
+    kaleido: &String,
+    post: &PostPermalink
+) -> Result<(), Box<dyn Error>> {
+    sqlx::query("INSERT INTO public.instagram_posts (kaleidoid, permalink) VALUES (uuid($1), $2)")
+        .bind(kaleido)
+        .bind(&post.permalink)
+        .execute(pool)
+        .await?;
+    Ok(())
 }

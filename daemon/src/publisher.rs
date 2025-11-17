@@ -9,6 +9,11 @@ struct MediaContainer {
     id: String
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+struct InstagramPost {
+    id: String
+}
+
 #[derive(Deserialize, Debug)]
 struct StatusResponse {
     status_code: Option<String>,
@@ -17,6 +22,17 @@ struct StatusResponse {
 enum AwaitError {
     ReqwestError(reqwest::Error),
     ApiError
+}
+
+#[derive(Deserialize, Debug)]
+struct UploadResponse {
+    id: String
+}
+
+#[derive(Deserialize, Debug)]
+pub struct PostPermalink {
+    id: String,
+    pub permalink: String,
 }
 
 static GRAPH_BASE: &str = "https://graph.facebook.com";
@@ -51,13 +67,8 @@ async fn create_media_container(client: &Client, media_url: &String) -> Result<M
     let url = format!("{}/{}/media", GRAPH_BASE, ig_id);
     let res = client
         .post(url)
-        //.bearer_auth(token)
-        //.header("Content-Type", "application/json")
         .query(&[
             ("access_token", &token)
-            //("media_type", "REEL"),
-            //("video_url", media_url),
-            //("caption", "a post, made by an api. who would've thought i find out how this stuff works?"),
         ])
         .json(&body);
 
@@ -74,7 +85,7 @@ async fn upload_media(filepath: String) -> Result<String, Box<dyn Error>> {
     catbox::file::from_file(filepath, userhash).await
 }
 
-async fn upload_to_container(client: &Client, container: MediaContainer) -> Result<String, reqwest::Error> {
+async fn upload_to_container(client: &Client, container: MediaContainer) -> Result<UploadResponse, reqwest::Error> {
     let token = get_accesstoken();
     let ig_id = get_accountid();
 
@@ -85,20 +96,14 @@ async fn upload_to_container(client: &Client, container: MediaContainer) -> Resu
     let url = format!("{}/{}/media_publish", GRAPH_BASE, ig_id);
     let res = client
         .post(url)
-        //.bearer_auth(token)
-        //.bearer_auth(token)
-        //.header("Content-Type", "application/json")
         .query(&[
             ("access_token", &token)
-            //("media_type", "REEL"),
-            //("video_url", media_url),
-            //("caption", "a post, made by an api. who would've thought i find out how this stuff works?"),
         ])
         .json(&body);
 
     let response = res.send().await?;
-    let json: Value = response.json().await?;
-    Ok(json.to_string())
+    let json: UploadResponse = response.json().await?;
+    Ok(json)
 }
 
 async fn wait_until_finished(client: &Client, container: &MediaContainer) -> anyhow::Result<()>{
@@ -131,6 +136,22 @@ async fn wait_until_finished(client: &Client, container: &MediaContainer) -> any
     }
 }
 
+async fn get_permalink(client: &Client, response: UploadResponse) -> Result<PostPermalink, reqwest::Error> {
+    let url = format!("{}/{}?fields=permalink", GRAPH_BASE, response.id);
+    let token = get_accesstoken();
+
+    let resp = client
+            .get(&url)
+            .query(&[
+                ("fields", "status_code"),
+                ("access_token", &token)
+            ]).send()
+            .await?;
+
+        Ok(resp.json().await?)
+
+}
+
 pub async fn create_instagram_post(filepath: String) {
     //upload file to catbox
     let url = upload_media(filepath).await.unwrap();
@@ -145,8 +166,9 @@ pub async fn create_instagram_post(filepath: String) {
     wait_until_finished(&client, &container).await.unwrap();
     //upload to instagram
     let ig_upload = upload_to_container(&client, container).await.unwrap();
-    println!("{}", ig_upload);
+    println!("{:?}", ig_upload);
 
     //link with data in database
+    let post = get_permalink(&client, ig_upload).await.unwrap();
 
 }
