@@ -1,7 +1,8 @@
--- Adminer 5.4.1 PostgreSQL 18.0 dump
--- this is the new version
+-- Adminer 5.4.1 PostgreSQL 18.1 dump
 
-CREATE SEQUENCE frames_frameid_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1620 CACHE 1;
+DROP TABLE IF EXISTS "frames";
+DROP SEQUENCE IF EXISTS frames_frameid_seq;
+CREATE SEQUENCE frames_frameid_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 2375 CACHE 1;
 
 CREATE TABLE "public"."frames" (
     "kaleidoid" uuid NOT NULL,
@@ -14,6 +15,8 @@ WITH (oids = false);
 CREATE UNIQUE INDEX frames_unique ON public.frames USING btree (frameid);
 
 
+DROP TABLE IF EXISTS "instagram_posts";
+DROP SEQUENCE IF EXISTS instagram_posts_id_seq;
 CREATE SEQUENCE instagram_posts_id_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 CACHE 1;
 
 CREATE TABLE "public"."instagram_posts" (
@@ -27,15 +30,19 @@ WITH (oids = false);
 CREATE UNIQUE INDEX instagram_posts_unique ON public.instagram_posts USING btree (permalink);
 
 
+DROP VIEW IF EXISTS "newview";
 CREATE TABLE "newview" ("id" uuid, "count" bigint, "?column?" json);
 
 
-CREATE TABLE "progress" ("id" uuid, "count" bigint, "frame_count" json);
+DROP VIEW IF EXISTS "progress";
+CREATE TABLE "progress" ("id" uuid, "count" bigint, "frame_count" json, "duration" interval);
 
 
+DROP VIEW IF EXISTS "showcase";
 CREATE TABLE "showcase" ("video" text, "gif" text, "thumbnail" text, "ts" timestamp, "parameters" json, "id" uuid);
 
 
+DROP TABLE IF EXISTS "tarascope";
 CREATE TABLE "public"."tarascope" (
     "id" uuid NOT NULL,
     "parameters" json NOT NULL,
@@ -62,7 +69,8 @@ CREATE VIEW "newview" AS SELECT t.id,
 DROP TABLE IF EXISTS "progress";
 CREATE VIEW "progress" AS SELECT t.id,
     count(f.*) AS count,
-    ((t.parameters -> 'frames'::text) -> '_frames_max'::text) AS frame_count
+    ((t.parameters -> 'frames'::text) -> '_frames_max'::text) AS frame_count,
+    (max(f."timestamp") - min(f."timestamp")) AS duration
    FROM (tarascope t
      JOIN frames f ON ((f.kaleidoid = t.id)))
   WHERE (t.status <> 3)
@@ -78,4 +86,4 @@ CREATE VIEW "showcase" AS SELECT concat(id, '/video.mp4') AS video,
    FROM tarascope
   WHERE (status = 3);
 
--- 2025-11-17 20:58:46 UTC
+-- 2025-11-17 23:59:11 UTC
