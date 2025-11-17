@@ -1,8 +1,6 @@
 -- Adminer 5.4.1 PostgreSQL 18.0 dump
 -- this is the new version
 
-\connect "postgres";
-
 CREATE SEQUENCE frames_frameid_seq INCREMENT 1 MINVALUE 1 MAXVALUE 2147483647 START 1620 CACHE 1;
 
 CREATE TABLE "public"."frames" (
