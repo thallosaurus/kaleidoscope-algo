@@ -1,4 +1,4 @@
-use std::{env::var, error::Error};
+use std::{env::var, error::Error, time::Duration};
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -9,8 +9,24 @@ struct MediaContainer {
     id: String
 }
 
+#[derive(Deserialize, Debug)]
+struct StatusResponse {
+    status_code: Option<String>,
+}
+
+enum AwaitError {
+    ReqwestError(reqwest::Error),
+    ApiError
+}
+
+static GRAPH_BASE: &str = "https://graph.facebook.com";
+
 fn get_accesstoken() -> String {
     var("IG_ACCESSTOKEN").expect("no instagram token found")
+}
+
+fn get_accountid() -> String {
+    var("IG_USERID").expect("no instagram id found")
 }
 
 /// Example Request:
@@ -22,24 +38,31 @@ fn get_accesstoken() -> String {
 ///           "image_url":"https://www.example.com/images/bronz-fonz.jpg"
 ///         }'
 /// ```
-async fn create_media_container(media_url: &String) -> Result<MediaContainer, reqwest::Error> {
-    let token = String::new();
-    let ig_id = String::new();
-    
-    let body = json!({
-        "image_url": media_url
-    });
+async fn create_media_container(client: &Client, media_url: &String) -> Result<MediaContainer, reqwest::Error> {
+    let token = get_accesstoken();
+    let ig_id = get_accountid();
 
-    
-    let client = Client::new();
-    let url = format!("https://graph.instagram.com/v24.0/{}/media", ig_id);
+    let body = json!({
+        "media_type": "REELS",
+        "video_url": media_url,
+        "caption": "a post, made by an api. who would've thought i find out how this stuff works?"
+    });
+        
+    let url = format!("{}/{}/media", GRAPH_BASE, ig_id);
     let res = client
         .post(url)
-        .bearer_auth(token)
-        .header("Content-Type", "application/json")
+        //.bearer_auth(token)
+        //.header("Content-Type", "application/json")
+        .query(&[
+            ("access_token", &token)
+            //("media_type", "REEL"),
+            //("video_url", media_url),
+            //("caption", "a post, made by an api. who would've thought i find out how this stuff works?"),
+        ])
         .json(&body);
 
     let response = res.send().await?;
+    println!("{:?}", response);
 
     let response_as_json: MediaContainer = response.json().await?;
     Ok(response_as_json)
@@ -51,30 +74,78 @@ async fn upload_media(filepath: String) -> Result<String, Box<dyn Error>> {
     catbox::file::from_file(filepath, userhash).await
 }
 
-async fn upload_to_container(container: MediaContainer, media_url: &String) -> Result<String, reqwest::Error> {
-    let token = String::new();
+async fn upload_to_container(client: &Client, container: MediaContainer) -> Result<String, reqwest::Error> {
+    let token = get_accesstoken();
+    let ig_id = get_accountid();
 
-    let client = Client::new();
-    let url = format!("https://rupload.facebook.com/ig-api-upload/v24.0/{}", container.id);
+    let body = json!({
+        "creation_id": container.id
+    });
+    
+    let url = format!("{}/{}/media_publish", GRAPH_BASE, ig_id);
     let res = client
         .post(url)
-        .bearer_auth(token)
-        .header("file_url", media_url);
+        //.bearer_auth(token)
+        //.bearer_auth(token)
+        //.header("Content-Type", "application/json")
+        .query(&[
+            ("access_token", &token)
+            //("media_type", "REEL"),
+            //("video_url", media_url),
+            //("caption", "a post, made by an api. who would've thought i find out how this stuff works?"),
+        ])
+        .json(&body);
 
     let response = res.send().await?;
     let json: Value = response.json().await?;
     Ok(json.to_string())
 }
 
+async fn wait_until_finished(client: &Client, container: &MediaContainer) -> anyhow::Result<()>{
+    let url = format!("{}/{}", GRAPH_BASE, container.id);
+    let token = get_accesstoken();
+    loop {
+        let resp = client
+            .get(&url)
+            .query(&[
+                ("fields", "status_code"),
+                ("access_token", &token)
+            ]).send()
+            .await?;
+
+        let json: StatusResponse = resp.json().await?;
+
+        match json.status_code.as_deref() {
+            Some("FINISHED") => {
+                println!("Media done");
+                return Ok(())
+            }
+            Some("ERROR") => {
+                anyhow::bail!("api returned error")
+            }
+            _ => {
+                println!("Not done yet");
+                tokio::time::sleep(Duration::from_secs(3)).await;
+            }
+        }
+    }
+}
+
 pub async fn create_instagram_post(filepath: String) {
     //upload file to catbox
     let url = upload_media(filepath).await.unwrap();
+    //let url = String::from("https://files.catbox.moe/byvuxj.mp4");
+    println!("catbox url: {}", url);
 
     //register new media container
-    let container = create_media_container(&url).await.unwrap();
+    let client = Client::new();
+    let container = create_media_container(&client, &url).await.unwrap();
+    println!("{:?}", container);
 
+    wait_until_finished(&client, &container).await.unwrap();
     //upload to instagram
-    let ig_upload = upload_to_container(container, &url).await.unwrap();
+    let ig_upload = upload_to_container(&client, container).await.unwrap();
+    println!("{}", ig_upload);
 
     //link with data in database
 

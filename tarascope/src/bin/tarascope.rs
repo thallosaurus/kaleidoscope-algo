@@ -1,7 +1,8 @@
 use std::io::Error;
 
 
-use clap::Parser;
+
+use clap::Parser as _;
 use clap_derive::{Parser, Subcommand};
 use tarascope::{CommandType, Tarascope, encoder::stitch_video, shader::KaleidoArgs};
 use serde::Serialize;
