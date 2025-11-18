@@ -30,10 +30,6 @@ WITH (oids = false);
 CREATE UNIQUE INDEX instagram_posts_unique ON public.instagram_posts USING btree (permalink);
 
 
-DROP VIEW IF EXISTS "newview";
-CREATE TABLE "newview" ("id" uuid, "count" bigint, "?column?" json);
-
-
 DROP VIEW IF EXISTS "progress";
 CREATE TABLE "progress" ("id" uuid, "count" bigint, "frame_count" json, "duration" interval);
 
@@ -80,10 +76,13 @@ DROP TABLE IF EXISTS "showcase";
 CREATE VIEW "showcase" AS SELECT concat(id, '/video.mp4') AS video,
     concat(id, '/video.gif') AS gif,
     concat(id, '/frame_00000.png') AS thumbnail,
-    "timestamp" AS ts,
     parameters,
-    id
-   FROM tarascope
-  WHERE (status = 3);
+    id,
+    MAX(f.timestamp) - MIN(f.timestamp) AS duration,
+    t.timestamp as ts
+   FROM tarascope t
+   JOIN frames f ON f.kaleidoid = t.id
+  WHERE (status = 3)
+  GROUP by t.id;
 
 -- 2025-11-17 23:59:11 UTC
