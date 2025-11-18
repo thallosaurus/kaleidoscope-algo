@@ -1,13 +1,15 @@
+///Web API Code
 use std::sync::Arc;
 
-use daemon::database::{
-    all_kaleidoscopes, init_database, insert_new_parameterized_job, single_kaleidoscopes,
+use crate::database::{
+    all_kaleidoscopes, insert_new_parameterized_job, single_kaleidoscopes,
 };
 use handlebars::Handlebars;
-use rocket::{State, get, launch, put, response::content::RawHtml, routes, serde::json::Json, tokio::sync::Mutex};
+use rocket::{State, fs::FileServer, get, put, response::content::RawHtml, routes, serde::json::Json, tokio::sync::Mutex};
 use serde_json::{Map, json};
 use sqlx::{Pool, Postgres};
 use tarascope::shader::KaleidoArgs;
+use tokio::sync::oneshot;
 
 struct ApiState<'a> {
     pool: Arc<Mutex<Pool<Postgres>>>,
@@ -67,21 +69,35 @@ async fn frontpage(state: &State<ApiState<'_>>) -> Result<RawHtml<String>, std::
     Ok(RawHtml(res))
 }
 
-#[launch]
-async fn rocket() -> _ {
-    let _ = dotenv::dotenv().ok();
-
-    let pool = init_database().await.unwrap();
+pub fn init_api(pool: Arc<Mutex<Pool<Postgres>>>, static_path: String) -> oneshot::Sender<()> {
+    let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
 
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("main", "./api-rs/index.hbs").unwrap();
+    handlebars.register_template_file("main", "./daemon/index.hbs").unwrap();
 
-    rocket::build()
+    let r = rocket::build()
         .manage(ApiState {
-            pool: Arc::new(Mutex::new(pool)),
+            pool,
             handlebars
         })
         .mount("/", routes![frontpage])
         .mount("/api", routes![full, single, new, random])
+        .mount("/assets", FileServer::from(static_path));
+
+
+    let _ = tokio::spawn(async move {
+        let orbit = r.launch().await.expect("rocket failed");
+            println!("Rocket launched");
+
+            let _ = shutdown_rx.await;
+            println!("Stopping webserver");
+
+            orbit.shutdown().notify();
+
+            println!("API is down");
+        });
+
+    shutdown_tx
+        //.launch().await
 }
