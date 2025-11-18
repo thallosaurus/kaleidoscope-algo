@@ -2,4 +2,4 @@ import rank
 import sys
 
 path = sys.argv[-1]
-print(rank.score_image(path))
+print(path + ": " + str(rank.score_image(path)))
