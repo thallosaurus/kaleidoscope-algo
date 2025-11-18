@@ -23,6 +23,7 @@ CREATE TABLE "public"."instagram_posts" (
     "id" integer DEFAULT nextval('instagram_posts_id_seq') NOT NULL,
     "kaleido_id" uuid,
     "permalink" text NOT NULL,
+    "catbox_link" text NOT NULL,
     CONSTRAINT "instagram_posts_pk" PRIMARY KEY ("id")
 )
 WITH (oids = false);
