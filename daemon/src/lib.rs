@@ -13,11 +13,12 @@ use tarascope::{
 };
 use tokio::sync::Mutex;
 
-use crate::{database::init_database, queue::{RenderQueue, RenderQueueRequest}};
+use crate::{api::init_api, database::init_database, queue::{RenderQueue, RenderQueueRequest}};
 
 pub mod database;
 mod queue;
 pub mod publisher;
+mod api;
 
 pub type SharedDatabasePool = Arc<Mutex<Pool<Postgres>>>;
 pub type SharedTarascope = Arc<Mutex<Tarascope>>;
@@ -35,21 +36,27 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     let _ = dotenv::dotenv().ok();
-    let pool = init_database().await.unwrap();
+    let master_pool = init_database().await.unwrap();
 
-    let mut listener = PgListener::connect_with(&pool).await?;
+    let mut listener = PgListener::connect_with(&master_pool.clone()).await?;
     listener.listen("test").await?;
     listener.listen("test2").await?;
     listener.listen("generate_random").await?;
     listener.listen("queue_parameters").await?;
     listener.listen("queue_still").await?;
+
+    let out = args.out.output_dir;
     
     let tarascopes = Arc::new(Mutex::new(Tarascope::new(String::from(
-        args.out.output_dir,
+        out.clone(),
     ))));
     
-    let r_pool = Arc::new(Mutex::new(pool));
+    let r_pool = Arc::new(Mutex::new(master_pool));
+    let r_clone = r_pool.clone();
+
     let render_queue = RenderQueue::new(r_pool, tarascopes);
+
+    let api = init_api(r_clone, out.clone());
 
     // main event loop
     // listens for database notifications and acts upon them.
@@ -86,7 +93,12 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                     }
                 }
             }
+            _ = tokio::signal::ctrl_c() => {
+                api.send(()).expect("error while stopping api");
+                break
+            }
         }
     }
     info!("database listener closed");
+    Ok(())
 }
