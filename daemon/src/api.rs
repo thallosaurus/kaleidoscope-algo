@@ -74,7 +74,7 @@ pub fn init_api(pool: Arc<Mutex<Pool<Postgres>>>, static_path: String) -> onesho
 
     let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("main", "./index.hbs").unwrap();
+    handlebars.register_template_file("main", "./daemon/index.hbs").unwrap();
 
     let r = rocket::build()
         .manage(ApiState {
