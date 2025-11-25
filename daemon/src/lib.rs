@@ -13,12 +13,13 @@ use tarascope::{
 };
 use tokio::sync::Mutex;
 
-use crate::{api::init_api, database::init_database, publisher::PostQueue, queue::{RenderQueue, RenderQueueRequest}};
+use crate::{api::init_api, database::init_database, discord::discord_bot, publisher::PostQueue, queue::{RenderQueue, RenderQueueRequest}};
 
 pub mod database;
 mod queue;
 pub mod publisher;
 mod api;
+mod discord;
 
 pub type SharedDatabasePool = Arc<Mutex<Pool<Postgres>>>;
 pub type SharedTarascope = Arc<Mutex<Tarascope>>;
@@ -37,6 +38,10 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
 
     let _ = dotenv::dotenv().ok();
     let master_pool = init_database().await.unwrap();
+
+    tokio::spawn(async move {
+        discord_bot().await;
+    });
 
     let mut listener = PgListener::connect_with(&master_pool.clone()).await?;
     listener.listen("test").await?;

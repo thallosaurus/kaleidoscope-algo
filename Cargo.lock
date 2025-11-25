@@ -905,6 +905,7 @@ dependencies = [
  "rocket",
  "serde",
  "serde_json",
+ "serenity",
  "simple_logger",
  "sqlx",
  "tarascope",
@@ -1093,14 +1094,6 @@ dependencies = [
  "const-oid",
  "crypto-common",
  "subtle",
-]
-
-[[package]]
-name = "discordtest"
-version = "0.1.0"
-dependencies = [
- "catbox",
- "serenity",
 ]
 
 [[package]]
