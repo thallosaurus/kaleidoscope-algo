@@ -5,7 +5,7 @@ use std::{
 };
 
 use clap::Parser;
-use log::{debug, info};
+use log::{debug, error, info};
 use sqlx::{Pool, Postgres, postgres::PgListener};
 use tarascope::{
     Tarascope,
@@ -13,7 +13,7 @@ use tarascope::{
 };
 use tokio::sync::Mutex;
 
-use crate::{api::init_api, database::init_database, queue::{RenderQueue, RenderQueueRequest}};
+use crate::{api::init_api, database::init_database, publisher::PostQueue, queue::{RenderQueue, RenderQueueRequest}};
 
 pub mod database;
 mod queue;
@@ -44,6 +44,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     listener.listen("generate_random").await?;
     listener.listen("queue_parameters").await?;
     listener.listen("queue_still").await?;
+    listener.listen("post_instagram").await?;
 
     let out = args.out.output_dir;
     
@@ -54,7 +55,8 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     let r_pool = Arc::new(Mutex::new(master_pool));
     let r_clone = r_pool.clone();
 
-    let render_queue = RenderQueue::new(r_pool, tarascopes);
+    let render_queue = RenderQueue::new(r_pool.clone(), tarascopes);
+    let insta_queue = PostQueue::new(r_pool.clone());
 
     let api = init_api(r_clone, out.clone());
 
@@ -71,20 +73,29 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                 match ch {
                     "test" => debug!("test notif!"),
                     "test2" => debug!("test2 notif!"),
-
+                    "post_instagram" => {
+                        if let Err(e) = insta_queue.push(publisher::PostQueueRequest::Instagram(String::from(data))) {
+                            error!("{:?}", e);
+                            continue;
+                        }
+                    }
+                    
                     // database sent request for image generation, add to queue
                     "generate_random" => {
                         if let Err(e) = render_queue.push(RenderQueueRequest::RandomAnimated) {
+                            error!("{:?}", e);
                             continue;
                         }
                     },
                     "queue_parameters" =>  {
                         if let Err(e) = render_queue.push(RenderQueueRequest::ParameterizedAnimated(String::from(data))) {
+                            error!("{:?}", e);
                             continue;
                         }
                     },
                     "queue_still" =>  {
                         if let Err(e) = render_queue.push(RenderQueueRequest::ParameterizedStill(String::from(data))) {
+                            error!("{:?}", e);
                             continue;
                         }
                     },

@@ -200,3 +200,10 @@ pub async fn insert_instagram_post(
         .await?;
     Ok(())
 }
+
+pub async fn trigger_instagram_post(pool: &Pool<Postgres>, id: String) -> Result<(), Box<dyn Error>> {
+    sqlx::query("NOTIFY post_instagram, $1")
+    .bind(id)
+    .execute(pool).await?;
+    Ok(())
+}

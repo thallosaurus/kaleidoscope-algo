@@ -24,6 +24,7 @@ pub enum RenderQueueRequest {
     ParameterizedStill(String),
 }
 
+#[derive(Debug)]
 pub enum RenderQueueError {
     QueuePushError,
 }
