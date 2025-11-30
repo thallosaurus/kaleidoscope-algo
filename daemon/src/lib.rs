@@ -1,12 +1,11 @@
 use std::{
-    env::current_dir,
+    env::{self, current_dir},
     error::Error,
     sync::{Arc, OnceLock},
 };
 
 use clap::Parser;
-use clap_derive::Parser;
-use log::{debug, info};
+use log::{debug, error, info};
 use sqlx::{Pool, Postgres, postgres::PgListener};
 use tarascope::{
     Tarascope,
@@ -14,10 +13,13 @@ use tarascope::{
 };
 use tokio::sync::Mutex;
 
-use crate::{database::init_database, queue::{RenderQueue, RenderQueueRequest}};
+use crate::{api::init_api, database::init_database, discord::DiscordBot, publisher::PostQueue, queue::{RenderQueue, RenderQueueRequest}};
 
 pub mod database;
 mod queue;
+pub mod publisher;
+mod api;
+mod discord;
 
 pub type SharedDatabasePool = Arc<Mutex<Pool<Postgres>>>;
 pub type SharedTarascope = Arc<Mutex<Tarascope>>;
@@ -35,21 +37,33 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
     let _ = dotenv::dotenv().ok();
-    let pool = init_database().await.unwrap();
+    let master_pool = init_database().await.unwrap();
 
-    let mut listener = PgListener::connect_with(&pool).await?;
+    let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
+    let bot = DiscordBot::new(token);
+    bot.send_message(1051294190455226458, "test".to_string()).await;
+
+    let mut listener = PgListener::connect_with(&master_pool.clone()).await?;
     listener.listen("test").await?;
     listener.listen("test2").await?;
     listener.listen("generate_random").await?;
     listener.listen("queue_parameters").await?;
     listener.listen("queue_still").await?;
+    listener.listen("post_instagram").await?;
+
+    let out = args.out.output_dir;
     
     let tarascopes = Arc::new(Mutex::new(Tarascope::new(String::from(
-        args.out.output_dir,
+        out.clone(),
     ))));
     
-    let r_pool = Arc::new(Mutex::new(pool));
-    let render_queue = RenderQueue::new(r_pool, tarascopes);
+    let r_pool = Arc::new(Mutex::new(master_pool));
+    let r_clone = r_pool.clone();
+
+    let render_queue = RenderQueue::new(r_pool.clone(), tarascopes);
+    let insta_queue = PostQueue::new(r_pool.clone());
+
+    let api = init_api(r_clone, out.clone());
 
     // main event loop
     // listens for database notifications and acts upon them.
@@ -64,20 +78,29 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                 match ch {
                     "test" => debug!("test notif!"),
                     "test2" => debug!("test2 notif!"),
-
+                    "post_instagram" => {
+                        if let Err(e) = insta_queue.push(publisher::PostQueueRequest::Instagram(String::from(data))) {
+                            error!("{:?}", e);
+                            continue;
+                        }
+                    }
+                    
                     // database sent request for image generation, add to queue
                     "generate_random" => {
                         if let Err(e) = render_queue.push(RenderQueueRequest::RandomAnimated) {
+                            error!("{:?}", e);
                             continue;
                         }
                     },
                     "queue_parameters" =>  {
                         if let Err(e) = render_queue.push(RenderQueueRequest::ParameterizedAnimated(String::from(data))) {
+                            error!("{:?}", e);
                             continue;
                         }
                     },
                     "queue_still" =>  {
                         if let Err(e) = render_queue.push(RenderQueueRequest::ParameterizedStill(String::from(data))) {
+                            error!("{:?}", e);
                             continue;
                         }
                     },
@@ -86,7 +109,12 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                     }
                 }
             }
+            _ = tokio::signal::ctrl_c() => {
+                api.send(()).expect("error while stopping api");
+                break
+            }
         }
     }
     info!("database listener closed");
+    Ok(())
 }

@@ -1,4 +1,3 @@
-use clap::Parser;
 use clap_derive::Parser;
 
 /// Test Program - What happens when you start this program with a negative number as argument?
@@ -11,6 +10,6 @@ struct CliTestArgs {
 }
 
 fn main() {
-    let args = CliTestArgs::parse();
+    let args = <CliTestArgs as clap::Parser>::parse();
     println!("{:?}", args);
 }
