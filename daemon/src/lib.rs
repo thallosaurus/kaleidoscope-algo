@@ -50,6 +50,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     listener.listen("queue_parameters").await?;
     listener.listen("queue_still").await?;
     listener.listen("post_instagram").await?;
+    listener.listen("callback").await?;
 
     let out = args.out.output_dir;
     
@@ -78,6 +79,9 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                 match ch {
                     "test" => debug!("test notif!"),
                     "test2" => debug!("test2 notif!"),
+                    "callback" => {
+                        println!("{:?} {:?}", ch, data)
+                    }
                     "post_instagram" => {
                         if let Err(e) = insta_queue.push(publisher::PostQueueRequest::Instagram(String::from(data))) {
                             error!("{:?}", e);

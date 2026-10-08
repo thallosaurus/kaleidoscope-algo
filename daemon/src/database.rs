@@ -118,6 +118,14 @@ pub async fn set_kaleidoscope_to_done(
         .bind(id)
         .execute(pool)
         .await?;
+    trigger_callback(pool, id.to_string()).await?;
+    Ok(())
+}
+
+pub async fn trigger_callback(pool: &Pool<Postgres>, id: String) -> Result<(), Box<dyn Error>> {
+    sqlx::query("NOTIFY callback, $1")
+    .bind(id)
+    .execute(pool).await?;
     Ok(())
 }
 
