@@ -1,0 +1,35 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+   <plist version="1.0">
+   <dict>
+        <key>EnvironmentVariables</key>
+        <dict>
+           <key>RUST_LOG</key>
+           <string>error</string>
+           <key>PG_HOST</key>
+           <string>localhost</string>
+           <key>PG_USER</key>
+           <string>postgres</string>
+           <key>PG_PASS</key>
+           <string>example</string>
+           <key>PG_DB</key>
+           <string>postgres</string>
+        </dict>
+       <key>Label</key>
+       <string>com.lenna.tarascope-server</string>
+       <key>ProgramArguments</key>
+       <array>
+	    <string>/Users/rillo/Desktop/kaleidoscope-algo/target/debug/tarascope-server</string>
+        <string>--output-dir=/Users/rillo/Desktop/kaleidoscope-algo/output</string>
+        <!--<string>serve</string> -->
+       </array>
+       <key>KeepAlive</key>
+       <true />
+       <key>RunAtLoad</key>
+       <true/>
+       <key>StandardOutPath</key>
+       <string>/tmp/tarascope.out</string>
+       <key>StandardErrorPath</key>
+       <string>/tmp/tarascope.err</string>
+   </dict>
+   </plist>
