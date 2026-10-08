@@ -11,13 +11,13 @@ use sqlx::{Pool, Postgres};
 use tarascope::shader::KaleidoArgs;
 use tokio::sync::oneshot;
 
-struct ApiState<'a> {
+struct ApiState {
     pool: Arc<Mutex<Pool<Postgres>>>,
-    handlebars: Handlebars<'a>
+    //handlebars: Handlebars<'a>
 }
 
 #[get("/")]
-async fn full(state: &State<ApiState<'_>>) -> String {
+async fn full(state: &State<ApiState>) -> String {
     let lock = state.pool.lock().await;
     //let p = lock.acquire().await;
     let res = all_kaleidoscopes(&lock).await.unwrap();
@@ -26,7 +26,7 @@ async fn full(state: &State<ApiState<'_>>) -> String {
 }
 
 #[put("/", data = "<data>")]
-async fn new(state: &State<ApiState<'_>>, data: Json<KaleidoArgs>) -> String {
+async fn new(state: &State<ApiState>, data: Json<KaleidoArgs>) -> String {
     println!("{:?}", data);
 
     let lock = state.pool.lock().await;
@@ -36,7 +36,7 @@ async fn new(state: &State<ApiState<'_>>, data: Json<KaleidoArgs>) -> String {
 }
 
 #[put("/random")]
-async fn random(state: &State<ApiState<'_>>) -> String {
+async fn random(state: &State<ApiState>) -> String {
     let data = KaleidoArgs::random();
     println!("{:?}", data);
 
@@ -47,7 +47,7 @@ async fn random(state: &State<ApiState<'_>>) -> String {
 }
 
 #[get("/<id>")]
-async fn single(state: &State<ApiState<'_>>, id: &str) -> String {
+async fn single(state: &State<ApiState>, id: &str) -> String {
     let lock = state.pool.lock().await;
     //let p = lock.acquire().await;
     let res = single_kaleidoscopes(&lock, &String::from(id))
@@ -57,7 +57,7 @@ async fn single(state: &State<ApiState<'_>>, id: &str) -> String {
     serde_json::to_string(&res).unwrap()
 }
 
-#[get("/")]
+/*#[get("/")]
 async fn frontpage(state: &State<ApiState<'_>>) -> Result<RawHtml<String>, std::io::Error> {
     let lock = state.pool.lock().await;
     let data = all_kaleidoscopes(&lock).await.unwrap();
@@ -67,21 +67,21 @@ async fn frontpage(state: &State<ApiState<'_>>) -> Result<RawHtml<String>, std::
     let res = state.handlebars.render("main", &content).unwrap();
 
     Ok(RawHtml(res))
-}
+}*/
 
 pub fn init_api(pool: Arc<Mutex<Pool<Postgres>>>, static_path: String) -> oneshot::Sender<()> {
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
 
-    let mut handlebars = Handlebars::new();
+    //let mut handlebars = Handlebars::new();
 
-    handlebars.register_template_file("main", "./daemon/index.hbs").unwrap();
+    //handlebars.register_template_file("main", "./daemon/index.hbs").unwrap();
 
     let r = rocket::build()
         .manage(ApiState {
             pool,
-            handlebars
+            //handlebars
         })
-        .mount("/", routes![frontpage])
+        //.mount("/", routes![frontpage])
         .mount("/api", routes![full, single, new, random])
         .mount("/assets", FileServer::from(static_path));
 
