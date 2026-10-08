@@ -86,6 +86,7 @@ pub async fn set_kaleidoscope_to_waiting(
         .bind(id)
         .execute(pool)
         .await?;
+        //trigger_callback(pool, id).await?;
     Ok(())
 }
 async fn set_kaleidoscope_to_running(
@@ -118,7 +119,7 @@ pub async fn set_kaleidoscope_to_done(
         .bind(id)
         .execute(pool)
         .await?;
-    trigger_callback(pool, id).await?;
+    //trigger_callback(pool, id).await?;
     Ok(())
 }
 
