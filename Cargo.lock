@@ -2806,6 +2806,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "nannou-test"
+version = "0.1.0"
+dependencies = [
+ "nannou",
+]
+
+[[package]]
 name = "nannou_core"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
