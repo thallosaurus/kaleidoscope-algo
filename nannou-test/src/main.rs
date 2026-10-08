@@ -7,7 +7,6 @@ struct Model {
 fn main() {
     nannou::app(model)
         .update(update)
-        .simple_window(view)
         .run();
 }
 
@@ -25,6 +24,15 @@ fn update(_app: &App, _model: &mut Model, _update: Update) {
 
 }
 
-fn view(_app: &App, _model: &Model, frame: Frame) {
-    frame.clear(PURPLE);
+fn view(app: &App, model: &Model, frame: Frame) {
+    frame.clear(BLACK);
+
+    let win = app.window_rect();
+    let r = Rect::from_w_h(512.0, 512.0).top_left_of(win);
+
+    let draw = app.draw();
+    draw.texture(&model.texture)
+    .xy(r.xy())
+    .wh(r.wh());
+    draw.to_frame(app, &frame).unwrap();
 }

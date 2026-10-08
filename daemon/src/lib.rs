@@ -41,7 +41,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
 
     let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
     let bot = DiscordBot::new(token);
-    bot.send_message(1051294190455226458, "test".to_string()).await;
+    //bot.send_message(1051294190455226458, "test".to_string()).await;
 
     let mut listener = PgListener::connect_with(&master_pool.clone()).await?;
     listener.listen("test").await?;
