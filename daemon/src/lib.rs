@@ -80,7 +80,7 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
                     "test" => debug!("test notif!"),
                     "test2" => debug!("test2 notif!"),
                     "callback" => {
-                        println!("{:?} {:?}", ch, data)
+                        println!("callback {:?} {:?}", ch, data)
                     }
                     "post_instagram" => {
                         if let Err(e) = insta_queue.push(publisher::PostQueueRequest::Instagram(String::from(data))) {
