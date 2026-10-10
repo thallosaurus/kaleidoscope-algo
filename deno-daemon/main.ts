@@ -8,13 +8,8 @@ const random = randomKaleidoscope({
 });
 console.log(random);
 
-const random_still = randomKaleidoscope({
-  type: "still",
-  frame: 0
-})
-
 await renderBlenderProject({
-  job: random_still,
+  job: random,
   outputPath: "./output",
   type: "blender"
 })

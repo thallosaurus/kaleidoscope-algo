@@ -1,5 +1,3 @@
-import { UUID } from "node:crypto";
-import * as path from "jsr:@std/path";
 import { TKaleidoscope } from "./arguments.ts";
 import { exists } from "jsr:@std/fs/exists";
 import { stitchVideo } from "./encoder.ts";
