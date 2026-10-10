@@ -13,9 +13,9 @@ use tokio::{
     sync::{Mutex, mpsc::UnboundedSender},
 };
 
-use crate::{exec::run, shader::KaleidoArgs};
+use crate::{exec::run_executor, shader::KaleidoArgs};
 pub mod encoder;
-mod exec;
+pub mod exec;
 pub mod shader;
 
 static BLEND_FILE: &[u8] = include_bytes!("../kaleido.blend");
@@ -42,51 +42,62 @@ pub struct RenderJobDirectories {
 }
 
 impl RenderJobDirectories {
+    /// Creates path management for a render job from its ID and output directory.
     pub fn new(id: String, dir: String) -> Self {
         Self {
             id,
             _directory: dir,
         }
     }
+    /// Returns the root directory for render jobs.
     pub fn output_dir(&self) -> String {
         /*let cwd = env::current_dir().expect("cannot access current working directory");
         let p = cwd.as_path().to_str().unwrap();*/
         self._directory.clone()
     }
 
+    /// Returns the identifier of this render job.
     pub fn get_id(&self) -> String {
         self.id.clone()
     }
 
+    /// Builds the job-specific output directory from the job ID.
     pub fn project_folder_path(&self) -> String {
         format!("{}/{}", self.output_dir(), self.get_id())
     }
 
+    /// Returns the path to the Blender stdout log.
     pub fn blender_stdout_path(&self) -> String {
         format!("{}/blender.stdout.log", self.project_folder_path())
     }
 
+    /// Returns the path to the Blender stderr log.
     pub fn blender_stderr_path(&self) -> String {
         format!("{}/blender.stderr.log", self.project_folder_path())
     }
 
+    /// Returns the path to the JSON file containing the render parameters.
     pub fn parameters_path(&self) -> String {
         format!("{}/parameters.json", self.project_folder_path())
     }
 
+    /// Returns the path to the Blender project file in the job directory.
     pub fn blender_project_path(&self) -> String {
         format!("{}/project.blend", self.project_folder_path())
     }
 
+    /// Returns the output pattern Blender uses to save frames.
     pub fn blender_frame_path(&self) -> String {
         format!("{}/frame_#####", self.project_folder_path())
     }
 
+    /// Returns the path to Blender’s native log.
     pub fn blender_native_log_path(&self) -> String {
         format!("{}/blender.log", self.project_folder_path())
     }
 }
 
+/// Writes embedded file data to a temporary file and returns it for shared access.
 fn extract_static_file(buffer: &[u8]) -> io::Result<Arc<Mutex<NamedTempFile>>> {
     let blend_tmp = Arc::new(Mutex::new(NamedTempFile::new()?));
     {
@@ -103,6 +114,7 @@ pub struct KaleidoOutput {
 }
 
 impl KaleidoOutput {
+    /// Stores the Blender exit status and the render output directory.
     pub fn new(status: ExitStatus, directory: String) -> Self {
         KaleidoOutput {
             _output_directory: directory,
@@ -123,12 +135,23 @@ pub enum CommandType {
 }
 
 impl CommandType {
+    /// Returns the job ID from the render request parameters.
     pub fn get_job_id(&self) -> String {
         match self {
             CommandType::Animated(_, _, kaleido_args) => kaleido_args.get_id(),
             CommandType::Still(_, kaleido_args) => kaleido_args.get_id(),
         }
     }
+
+    #[cfg(test)]
+    fn command(&self, project: &Path, loader: &Path, dirs: &RenderJobDirectories) -> Command {
+        println!("using debug cmd adapter");
+        let cmd = Command::new("echo");
+        cmd
+    }
+
+    #[cfg(not(test))]
+    /// Builds the Blender process command for either a still image or an animation render.
     fn command(&self, project: &Path, loader: &Path, dirs: &RenderJobDirectories) -> Command {
         match self {
             CommandType::Animated(frame_start, frame_end, args) => {
@@ -176,6 +199,7 @@ impl CommandType {
             }
         }
     }
+    /// Returns the kaleidoscope parameters for this render request.
     fn project_args(&self) -> KaleidoArgs {
         match self {
             CommandType::Animated(_, _, kaleido_args) => kaleido_args.clone(),
@@ -191,15 +215,18 @@ pub struct Tarascope {
 }
 
 impl Tarascope {
+    /// Creates the renderer with the root directory for job files.
     pub fn new(directory: String) -> Self {
         Self { directory }
     }
+    /// Builds the paths for a job from its ID.
     pub fn paths_for_job(&self, job_id: &String) -> RenderJobDirectories {
         RenderJobDirectories {
             _directory: self.directory.clone(),
             id: job_id.clone(),
         }
     }
+    /// Prepares the job files and parameters, starts Blender, and returns its result.
     pub async fn start_render(
         &self,
         c: CommandType,
@@ -236,7 +263,30 @@ impl Tarascope {
         // wait until the render has finished
         //let output = child.wait_with_output()?;
 
-        let status = run(&mut cmd, &dirs, sender).await?;
+        let status = run_executor(&mut cmd, &dirs, sender).await?;
         Ok(KaleidoOutput::new(status, dirs.output_dir()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{BLEND_FILE, CommandType, PYTHON_LOADER, RenderJobDirectories, extract_static_file, shader::KaleidoArgs};
+
+    fn test_debug_executor() {
+        let cmd = CommandType::Animated(0, 100, KaleidoArgs::random());
+                let project_file = extract_static_file(BLEND_FILE).unwrap();
+        let project_borrow = project_file.try_lock().unwrap();
+        let tmp_project_path = project_borrow.path();
+
+                // same with the loader file
+        let loader_file = extract_static_file(PYTHON_LOADER).unwrap();
+        let loader_borrow = loader_file.try_lock().unwrap();
+        let tmp_loader_path = loader_borrow.path();
+
+        
+        let r = cmd.command(tmp_project_path, tmp_loader_path, RenderJobDirectories {
+            _directory: self.directory.clone(),
+            id: job_id.clone(),
+        })
     }
 }

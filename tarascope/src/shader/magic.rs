@@ -19,19 +19,23 @@ pub struct MagicArgs {
     dist: f32,
 }
 
+/// Defines the allowed range for recursion depth.
 fn depth_range() -> RangeInclusive<u8> {
     0..=10
 }
 
+/// Defines the allowed range for the scale parameter.
 fn scale_range() -> RangeInclusive<f32> {
     0.0..=5.0
 }
 
+/// Defines the allowed range for the distortion parameter.
 fn distortion_range() -> RangeInclusive<f32> {
     0.0..=5.0
 }
 
 impl MagicArgs {
+    /// Creates a random configuration within the value ranges defined for this type.
     pub fn random() -> Self {
         Self {
             depth: random_range(depth_range()),
@@ -40,6 +44,7 @@ impl MagicArgs {
         }
     }
 
+    /// Serializes the configuration to the project JSON format.
     pub fn json(&self) -> Value {
         json!({
             "magic_depth": self.depth,
@@ -48,6 +53,7 @@ impl MagicArgs {
         })
     }
 
+    /// Reads the configuration from JSON and validates its types and allowed value ranges.
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
         let depth = validate_range(parse_u64(v, "magic_depth")? as u8, depth_range())?;
         let scale = validate_range(parse_f64(v, "magic_scale")? as f32, scale_range())?;

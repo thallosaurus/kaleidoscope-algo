@@ -1,5 +1,6 @@
 use daemon::publisher::create_instagram_post;
 use dotenv::dotenv;
+/// Uploads the local test video to Instagram.
 
 #[tokio::main]
 async fn main() {

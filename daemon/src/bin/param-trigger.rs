@@ -4,6 +4,7 @@ use clap::Parser;
 
 use daemon::database::{init_database, insert_new_parameterized_job};
 use tarascope::shader::KaleidoArgs;
+/// Reads render parameters from the command line and queues the parameterized job.
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

@@ -30,6 +30,7 @@ pub enum ParseError {
 }
 
 impl Display for ParseError {
+    /// Formats the parse error as a readable error message.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ParseError::WrongType(key) => {
@@ -54,7 +55,7 @@ pub struct KaleidoArgs {
     composite: CompositeArgs,
 
     #[clap(flatten)]
-    frames: FrameArgs,
+    pub frames: FrameArgs,
 
     #[clap(skip = Uuid::new_v4().to_string())]
     id: String,
@@ -63,7 +64,14 @@ pub struct KaleidoArgs {
     //output: OutputArgs,
 }
 
+impl From<Value> for KaleidoArgs {
+    fn from(value: Value) -> Self {
+        Self::from_json(value).expect("error while parsing json")
+    }
+}
+
 impl KaleidoArgs {
+    /// Creates a random configuration within the value ranges defined for this type.
     pub fn random() -> Self {
         Self {
             texture: TextureSelector::random(),
@@ -75,6 +83,7 @@ impl KaleidoArgs {
         }
     }
 
+    /// Serializes the configuration to the project JSON format.
     pub fn json(&self) -> Value {
         json!({
             "id": self.get_id(),
@@ -90,7 +99,8 @@ impl KaleidoArgs {
         })
     }
 
-    pub fn from_json(v: Value) -> Result<Self, ParseError> {
+    /// Reads the configuration from JSON and validates its types and allowed value ranges.
+    fn from_json(v: Value) -> Result<Self, ParseError> {
         println!("{:?}", v.as_object());
         let repetition = validate_range(parse_u64(&v, "repetition")? as u8, repetition_range())?;
         let scaling = validate_range(parse_f64(&v, "scaling")? as f32, scaling_range())?;
@@ -115,6 +125,7 @@ impl KaleidoArgs {
         })
     }
 
+    /// Encodes the JSON configuration as a Base64 string for the Blender invocation.
     pub fn base64(&self) -> String {
         BASE64_STANDARD.encode(self.json().to_string())
     }
@@ -126,21 +137,26 @@ impl KaleidoArgs {
         self.frames.frame_end
     }*/
 
+    /// Returns the identifier of this render job.
     pub fn get_id(&self) -> String {
         self.id.clone()
     }
 }
 
+/// Defines the allowed number of kaleidoscope repetitions.
 fn repetition_range() -> RangeInclusive<u8> {
     3..=12
 }
 
+/// Defines the allowed range for kaleidoscope scaling.
 fn scaling_range() -> RangeInclusive<f32> {
     2.5..=12.0
 }
+/// Defines the allowed rotation angle for the kaleidoscope.
 fn rotation_range() -> RangeInclusive<f32> {
     0.0..=360.0
 }
+/// Defines the allowed range for ping-pong animation.
 fn pingpong_range() -> RangeInclusive<f32> {
     0.5..=4.5
 }
@@ -165,6 +181,7 @@ struct PolarArgs {
 }
 
 impl PolarArgs {
+    /// Creates a random configuration within the value ranges defined for this type.
     pub fn random() -> Self {
         Self {
             repetition: random_range(repetition_range()),
@@ -201,6 +218,7 @@ enum TextureSelector {
 }
 
 impl TextureSelector {
+    /// Creates a random configuration within the value ranges defined for this type.
     pub fn random() -> Self {
         // 5 = without uNoise
         // 6 = with uNoise
@@ -219,6 +237,7 @@ impl TextureSelector {
         }
     }
 
+    /// Returns the numeric index of the selected texture variant.
     fn get_index(&self) -> u8 {
         match self {
             TextureSelector::Gabor(_) => 0,
@@ -231,6 +250,7 @@ impl TextureSelector {
         }
     }
 
+    /// Serializes the configuration to the project JSON format.
     fn json(&self) -> Value {
         match self {
             TextureSelector::Gabor(gabor_args) => gabor_args.json(),
@@ -243,6 +263,7 @@ impl TextureSelector {
         }
     }
 
+    /// Reads the configuration from JSON and validates its types and allowed value ranges.
     fn from_json(v: &Value) -> Result<Self, ParseError> {
         let index = parse_u64(v, "texture_index")? as u8;
         let texture = v["texture"].clone();
@@ -297,22 +318,27 @@ struct CompositeArgs {
 }
 
 // TODO Move to static config file? 
+/// Defines the allowed range for lens distortion.
 fn lens_distortion_range() -> RangeInclusive<f32> {
     -1.0..=-0.5
 }
 
 // TODO Move to static config file? 
+/// Defines the allowed range for lens dispersion.
 fn lens_dispersion_range() -> RangeInclusive<f32> {
     -1.0..=-0.5
 }
+/// Defines the allowed range for hue shift.
 fn hue_range() -> RangeInclusive<f32> {
     0.0..=1.0
 }
+/// Defines the allowed range for saturation.
 fn saturation_range() -> RangeInclusive<f32> {
     1.0..=2.0
 }
 
 impl CompositeArgs {
+    /// Creates a random configuration within the value ranges defined for this type.
     fn random() -> Self {
         Self {
             lens_distortion: random_range(lens_distortion_range()),
@@ -321,6 +347,7 @@ impl CompositeArgs {
             saturation: random_range(saturation_range()),
         }
     }
+    /// Serializes the configuration to the project JSON format.
     fn json(&self) -> Value {
         json!({
             "composite_lens_distortion": self.lens_distortion,
@@ -330,6 +357,7 @@ impl CompositeArgs {
         })
     }
 
+    /// Reads the configuration from JSON and validates its types and allowed value ranges.
     fn from_json(json: &Value) -> Result<Self, ParseError> {
         let hue = validate_range(parse_f64(json, "composite_hue")? as f32, hue_range())?;
 
@@ -367,6 +395,7 @@ where
     }
 }
 
+/// Reads the specified key from a JSON object and reports missing values.
 fn parse(v: &Value, key: &'static str) -> Result<Value, ParseError> {
     let value = v.get(key);
     if let Some(v) = value {
@@ -375,6 +404,7 @@ fn parse(v: &Value, key: &'static str) -> Result<Value, ParseError> {
         Err(ParseError::WrongType(String::from(key)))
     }
 }
+/// Reads a JSON value as an unsigned integer.
 fn parse_u64(v: &Value, key: &'static str) -> Result<u64, ParseError> {
     let value = v[key].as_u64();
     println!("[DEBUG/u64] {}: {:?}", key, value);
@@ -384,6 +414,7 @@ fn parse_u64(v: &Value, key: &'static str) -> Result<u64, ParseError> {
         Err(ParseError::WrongType(String::from(key)))
     }
 }
+/// Reads a JSON value as a floating-point number.
 fn parse_f64(v: &Value, key: &'static str) -> Result<f64, ParseError> {
     let value = v[key].as_f64();
     println!("[DEBUG/f64] {}: {:?}", key, value);
@@ -393,6 +424,7 @@ fn parse_f64(v: &Value, key: &'static str) -> Result<f64, ParseError> {
         Err(ParseError::WrongType(String::from(key)))
     }
 }
+/// Reads a JSON value as a string.
 fn parse_string(v: &Value, key: &'static str) -> Result<String, ParseError> {
     let value = v[key].as_str();
     println!("[DEBUG/string] {}: {:?}", key, value);
@@ -409,18 +441,21 @@ struct TexturedArgs {
 }
 
 impl TexturedArgs {
+    /// Creates the currently hard-coded texture configuration.
     pub fn random() -> Self {
         Self {
             file_path: String::from("path goes here"),
         }
     }
 
+    /// Serializes the configuration to the project JSON format.
     pub fn json(&self) -> Value {
         json!({
             "file_path": self.file_path
         })
     }
 
+    /// Reads the texture file path from JSON.
     pub fn from_json(json: &Value) -> Result<Self, ParseError> {
         let file_path = String::from(
             json["file_path"]
@@ -432,15 +467,16 @@ impl TexturedArgs {
     }
 }
 #[derive(Parser, Debug, Clone, Serialize, Deserialize)]
-struct FrameArgs {
+pub struct FrameArgs {
     #[arg(long)]
-    frame_start: u16,
+    pub frame_start: u16,
 
     #[arg(long)]
-    frame_end: u16,
+    pub frame_end: u16,
 }
 
 impl FrameArgs {
+    /// Serializes the configuration to the project JSON format.
     pub fn json(&self) -> Value {
         json!({
             "_frames_start": self.frame_start,
@@ -448,6 +484,7 @@ impl FrameArgs {
         })
     }
 
+    /// Reads the start and end frame from JSON.
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
         let frame_start = parse_u64(v, "_frames_start")? as u16;
         let frame_end = parse_u64(v, "_frames_max")? as u16;
@@ -460,10 +497,11 @@ impl FrameArgs {
 }
 
 impl Default for FrameArgs {
+    /// Creates the default configuration for this type.
     fn default() -> Self {
         Self {
             frame_start: 1,
-            frame_end: 300,
+            frame_end: 10,
         }
     }
 }

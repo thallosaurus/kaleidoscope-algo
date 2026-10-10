@@ -36,6 +36,7 @@ pub struct RenderQueue {
 }
 
 impl RenderQueue {
+    /// Creates the render queue and starts its job-processing background task.
     pub fn new(pool: SharedDatabasePool, executor: SharedTarascope) -> Self {
         // for the start allocate a size 2 render
         let (queue_sender, rx) = unbounded_channel::<RenderQueueRequest>();
@@ -47,6 +48,7 @@ impl RenderQueue {
         }
     }
 
+    /// Processes incoming queue requests in a background task.
     fn task(
         pool: SharedDatabasePool,
         mut rx: UnboundedReceiver<RenderQueueRequest>,
@@ -148,6 +150,7 @@ impl RenderQueue {
         })
     }
 
+    /// Starts a render job and stores incoming frame status updates in the database.
     async fn render(
         pool: SharedDatabasePool,
         job: CommandType,
@@ -190,6 +193,7 @@ impl RenderQueue {
         Ok(output)
     }
 
+    /// Adds a request to the corresponding asynchronous queue.
     pub fn push(&self, request: RenderQueueRequest) -> Result<(), RenderQueueError> {
         //debug!("queue capacity: {}", self.queue_sender.capacity());
         debug!("Adding {:?} to the queue", request);

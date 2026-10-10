@@ -5,6 +5,7 @@ use std::{
 
 use command_fds::{CommandFdExt, FdMapping};
 use log::{error, info};
+use serde::{Deserialize, Serialize};
 use tokio::{
     fs::File,
     io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader},
@@ -16,13 +17,12 @@ use tokio::{
 use crate::RenderJobDirectories;
 
 /// Runs the blender executor
-pub async fn run(
+pub async fn run_executor(
     cmd: &mut Command,
     dirs: &RenderJobDirectories,
     sender: UnboundedSender<String>,
 ) -> io::Result<ExitStatus> {
     let (writer, reader) = pipe::pipe()?;
-
     let sender = Arc::new(Mutex::new(sender));
 
     //attach fd mappings
@@ -121,4 +121,10 @@ pub async fn run(
             }
         }
     }
+}
+
+#[derive(Serialize, Debug, Deserialize)]
+pub struct ExecutorUpdate {
+    id: String,
+    frame: u32
 }

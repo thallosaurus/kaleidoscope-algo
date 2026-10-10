@@ -2,6 +2,7 @@ use std::error::Error;
 
 use daemon::database::{init_database, insert_new_parameterized_job, todays_done_jobs};
 use tarascope::shader::KaleidoArgs;
+/// Loads and prints today’s completed showcase entries.
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

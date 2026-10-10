@@ -4,3 +4,4 @@ output/
 .venv/
 __pycache__/
 .sqlx/
+.blend1

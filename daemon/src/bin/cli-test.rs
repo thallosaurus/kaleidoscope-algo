@@ -9,6 +9,7 @@ struct CliTestArgs {
     value: f32
 }
 
+/// Parses the test value from the command line and prints the arguments.
 fn main() {
     let args = <CliTestArgs as clap::Parser>::parse();
     println!("{:?}", args);

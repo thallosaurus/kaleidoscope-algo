@@ -49,10 +49,12 @@ pub enum PostQueueError {
 
 static GRAPH_BASE: &str = "https://graph.facebook.com";
 
+/// Reads the Instagram access token from an environment variable.
 fn get_accesstoken() -> String {
     var("IG_ACCESSTOKEN").expect("no instagram token found")
 }
 
+/// Reads the Instagram account ID from an environment variable.
 fn get_accountid() -> String {
     var("IG_USERID").expect("no instagram id found")
 }
@@ -92,12 +94,14 @@ async fn create_media_container(
     Ok(response_as_json)
 }
 
+/// Uploads the video file to Catbox and returns its public URL.
 async fn upload_media(filepath: String) -> Result<String, Box<dyn Error>> {
     //get catbox userhash
     let userhash = var("CATBOX_USERHASH").ok();
     catbox::file::from_file(filepath, userhash).await
 }
 
+/// Publishes the prepared Instagram media container.
 async fn upload_to_container(
     client: &Client,
     container: MediaContainer,
@@ -120,6 +124,7 @@ async fn upload_to_container(
     Ok(json)
 }
 
+/// Polls the container status until Instagram finishes processing or reports an error.
 async fn wait_until_finished(client: &Client, container: &MediaContainer) -> anyhow::Result<()> {
     let url = format!("{}/{}", GRAPH_BASE, container.id);
     let token = get_accesstoken();
@@ -148,6 +153,7 @@ async fn wait_until_finished(client: &Client, container: &MediaContainer) -> any
     }
 }
 
+/// Fetches the permalink for the published Instagram post.
 async fn get_permalink(
     client: &Client,
     response: UploadResponse,
@@ -164,6 +170,7 @@ async fn get_permalink(
     Ok(resp.json().await?)
 }
 
+/// Uploads a video, creates the Instagram post, and waits for processing to finish.
 pub async fn create_instagram_post(filepath: String) {
     //upload file to catbox
     let url = upload_media(filepath).await.unwrap();
@@ -196,6 +203,7 @@ pub struct PostQueue {
 }
 
 impl PostQueue {
+    /// Creates the publishing queue and starts its background task.
     pub fn new(pool: SharedDatabasePool) -> Self {
         let (queue_sender, rx) = unbounded_channel::<PostQueueRequest>();
 
@@ -206,6 +214,7 @@ impl PostQueue {
         }
     }
 
+    /// Processes incoming queue requests in a background task.
     fn task(
         pool: SharedDatabasePool,
         mut rx: UnboundedReceiver<PostQueueRequest>,
@@ -230,6 +239,7 @@ impl PostQueue {
         })
     }
 
+    /// Adds a request to the corresponding asynchronous queue.
     pub fn push(&self, request: PostQueueRequest) -> Result<(), PostQueueError> {
         //debug!("queue capacity: {}", self.queue_sender.capacity());
         debug!("Adding {:?} to the queue", request);
