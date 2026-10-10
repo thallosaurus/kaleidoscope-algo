@@ -62,10 +62,7 @@ function randomTexture(): TKaleidoscope["texture"] {
   }
 }
 
-export function randomKaleidoscope(default_frames = {
-  start: 1,
-  end: 50
-}): TKaleidoscope {
+export function randomKaleidoscope(default_frames: any): TKaleidoscope {
   return Kaleidoscope.parse({
     id: randomUUID(),
     texture: randomTexture(),
@@ -86,9 +83,8 @@ export function randomKaleidoscope(default_frames = {
       height: 1920
     },
     frames: {
-      type: "animated",
       ...default_frames
-      //frame: integerBetween(1, 100),
     }
+      //frame: integerBetween(1, 100),
   });
 }

@@ -219,6 +219,7 @@ function renderCommand(dirs: RenderJobDirectory, job: TKaleidoscope) {
                     "-o",
                     dirs.blenderFramePath,
                     "-Y",
+                    "-P",
                     dirs.loaderPath,
                     "-f",
                     String(job.frames.frame),
@@ -261,10 +262,12 @@ export async function renderBlenderProject({ job, outputPath, onUpdate }: Blende
     const paramsJson = JSON.stringify(job);
     await Deno.writeTextFile(dirs.parametersPath, paramsJson, { create: true });
     const j = await renderJob(job, dirs, onUpdate ?? console.log);
-    if (j.success) {
-        return stitchVideo(dirs);
-    } else {
-        console.log("no success", j)
+    if (job.frames.type == "animated") {
+        if (j.success) {
+            return stitchVideo(dirs);
+        } else {
+            console.error(j);
+        }
     }
     //console.log(dirs);
 }
