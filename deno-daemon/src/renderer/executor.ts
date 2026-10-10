@@ -16,6 +16,7 @@ export class RenderJobDirectory {
     #directory: string
     #id: string
     constructor(id: string, dir: string) {
+        console.log(dir);
         this.#id = id
         this.#directory = dir
     }
@@ -242,10 +243,11 @@ function renderCommand(dirs: RenderJobDirectory, job: TKaleidoscope) {
 type BlenderRenderProject = {
     type: "blender",
     job: TKaleidoscope,
-    outputPath: string
+    outputPath: string,
+    onUpdate?: RenderStatusCallback
 };
 
-export async function renderBlenderProject({ job, outputPath }: BlenderRenderProject) {
+export async function renderBlenderProject({ job, outputPath, onUpdate }: BlenderRenderProject) {
     const dirs = new RenderJobDirectory(job.id, outputPath)
     await dirs.createProjectFolder()
 
@@ -258,9 +260,9 @@ export async function renderBlenderProject({ job, outputPath }: BlenderRenderPro
     //write parameters
     const paramsJson = JSON.stringify(job);
     await Deno.writeTextFile(dirs.parametersPath, paramsJson, { create: true });
-    const j = await renderJob(job, dirs, console.log);
+    const j = await renderJob(job, dirs, onUpdate ?? console.log);
     if (j.success) {
-        stitchVideo(dirs);
+        return stitchVideo(dirs);
     } else {
         console.log("no success", j)
     }
