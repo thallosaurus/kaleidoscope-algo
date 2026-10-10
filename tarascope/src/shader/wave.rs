@@ -25,23 +25,29 @@ pub struct WaveArgs {
     phase_offset: f32,
 }
 
+/// Defines the allowed range for the scale parameter.
 fn scale_range() -> RangeInclusive<f32> {
     0.2..=5.0
 }
+/// Defines the allowed range for the distortion parameter.
 fn distortion_range() -> RangeInclusive<f32> {
     -10.0..=10.0
 }
+/// Defines the allowed range for the detail parameter.
 fn detail_range() -> RangeInclusive<f32> {
     0.0..=5.0
 }
+/// Defines the allowed range for detail roughness.
 fn detail_roughness_range() -> RangeInclusive<f32> {
     0.0..=1.0
 }
+/// Defines the allowed range for phase offset.
 fn phase_offset_range() -> RangeInclusive<f32> {
     0.0..=50.0
 }
 
 impl WaveArgs {
+    /// Creates a random configuration within the value ranges defined for this type.
     pub fn random() -> Self {
         Self {
             scale: random_range(scale_range()),
@@ -51,6 +57,7 @@ impl WaveArgs {
             phase_offset: random_range(phase_offset_range()),
         }
     }
+    /// Serializes the configuration to the project JSON format.
     pub fn json(&self) -> Value {
         json!({
             "wave_scale": self.scale,
@@ -61,6 +68,7 @@ impl WaveArgs {
         })
     }
 
+    /// Reads the configuration from JSON and validates its types and allowed value ranges.
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
         let detail = validate_range(parse_f64(v, "wave_detail")? as f32, detail_range())?;
         let scale = validate_range(parse_f64(v, "wave_scale")? as f32, scale_range())?;

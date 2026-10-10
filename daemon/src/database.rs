@@ -12,6 +12,7 @@ use tarascope::{RenderStatus, shader::KaleidoArgs};
 
 use crate::publisher::PostPermalink;
 
+/// Creates a PostgreSQL connection pool using environment variables.
 pub async fn init_database() -> Result<Pool<Postgres>, Box<dyn Error>> {
     let host = var("PG_HOST").unwrap_or("localhost".to_string());
     let username = var("PG_USER").unwrap_or("postgres".to_string());
@@ -28,6 +29,7 @@ pub async fn init_database() -> Result<Pool<Postgres>, Box<dyn Error>> {
     Ok(pool)
 }
 
+/// Loads showcase entries, ordered by creation time from newest to oldest.
 pub async fn all_kaleidoscopes(pool: &Pool<Postgres>) -> Result<Vec<Showcase>, Box<dyn Error>> {
     let d = sqlx::query_as::<_, Showcase>(
         "SELECT id::text, video, gif, thumbnail, ts::timestamp FROM showcase ORDER BY ts DESC",
@@ -38,6 +40,7 @@ pub async fn all_kaleidoscopes(pool: &Pool<Postgres>) -> Result<Vec<Showcase>, B
     Ok(d)
 }
 
+/// Loads the showcase entry for the specified kaleidoscope ID.
 pub async fn single_kaleidoscopes(
     pool: &Pool<Postgres>,
     id: &String,
@@ -60,11 +63,13 @@ pub struct Showcase {
     ts: NaiveDateTime,
 }
 
+/// Sends a PostgreSQL notification to start a random render job.
 pub async fn trigger_generation(pool: &Pool<Postgres>) -> Result<(), Box<dyn Error>> {
     sqlx::query("NOTIFY generate_random").execute(pool).await?;
     Ok(())
 }
 
+/// Creates a kaleidoscope job in the database with its serialized parameters.
 pub async fn register_new_kaleidoscope(
     pool: &Pool<Postgres>,
     id: &String,
@@ -78,6 +83,7 @@ pub async fn register_new_kaleidoscope(
     Ok(())
 }
 
+/// Sets the job status in the database to waiting.
 pub async fn set_kaleidoscope_to_waiting(
     pool: &Pool<Postgres>,
     id: &String,
@@ -89,6 +95,7 @@ pub async fn set_kaleidoscope_to_waiting(
         //trigger_callback(pool, id).await?;
     Ok(())
 }
+/// Sets the job status in the database to running.
 async fn set_kaleidoscope_to_running(
     pool: &Pool<Postgres>,
     id: &String,
@@ -100,6 +107,7 @@ async fn set_kaleidoscope_to_running(
     Ok(())
 }
 
+/// Sets the job status in the database to failed.
 async fn set_kaleidoscope_to_failed(
     pool: &Pool<Postgres>,
     id: &String,
@@ -111,6 +119,7 @@ async fn set_kaleidoscope_to_failed(
     Ok(())
 }
 
+/// Sets the job status in the database to complete.
 pub async fn set_kaleidoscope_to_done(
     pool: &Pool<Postgres>,
     id: &String,
@@ -123,6 +132,7 @@ pub async fn set_kaleidoscope_to_done(
     Ok(())
 }
 
+/// Sends a PostgreSQL notification for the specified job.
 pub async fn trigger_callback(pool: &Pool<Postgres>, id: &String) -> Result<(), Box<dyn Error>> {
     sqlx::query("NOTIFY callback, $1")
     .bind(id)
@@ -130,6 +140,7 @@ pub async fn trigger_callback(pool: &Pool<Postgres>, id: &String) -> Result<(), 
     Ok(())
 }
 
+/// Stores the reported render progress for a single frame.
 pub async fn insert_frame(
     pool: &Pool<Postgres>,
     update: RenderStatus,
@@ -142,6 +153,7 @@ pub async fn insert_frame(
     Ok(())
 }
 
+/// Stores a parameterized animation job and adds it to the render queue.
 pub async fn insert_new_parameterized_job(
     pool: &Pool<Postgres>,
     kargs: KaleidoArgs,
@@ -156,6 +168,7 @@ pub async fn insert_new_parameterized_job(
     Ok(())
 }
 
+/// Stores a parameterized still-image job and adds it to the still-render queue.
 pub async fn insert_new_parameterized_still_job(
     pool: &Pool<Postgres>,
     kargs: KaleidoArgs,
@@ -170,6 +183,7 @@ pub async fn insert_new_parameterized_still_job(
     Ok(())
 }
 
+/// Loads a job’s saved parameters and converts them to KaleidoArgs.
 pub async fn get_specific_job_parameters(
     pool: &Pool<Postgres>,
     id: &String,
@@ -186,6 +200,7 @@ pub async fn get_specific_job_parameters(
     Ok(KaleidoArgs::from_json(vvvv).unwrap())
 }
 
+/// Loads today’s published showcase IDs and their thumbnails.
 pub async fn todays_done_jobs(
     pool: &Pool<Postgres>,
 ) -> Result<Vec<(String, String)>, Box<dyn Error>> {
@@ -197,6 +212,7 @@ pub async fn todays_done_jobs(
     Ok(q)
 }
 
+/// Stores the Instagram post permalink for the kaleidoscope job.
 pub async fn insert_instagram_post(
     pool: &Pool<Postgres>,
     kaleido: &String,
@@ -210,6 +226,7 @@ pub async fn insert_instagram_post(
     Ok(())
 }
 
+/// Sends a PostgreSQL notification to publish the specified job.
 pub async fn trigger_instagram_post(pool: &Pool<Postgres>, id: String) -> Result<(), Box<dyn Error>> {
     sqlx::query("NOTIFY post_instagram, $1")
     .bind(id)

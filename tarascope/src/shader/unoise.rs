@@ -16,23 +16,29 @@ pub struct UnoiseArgs {
     distortion: f32,
 }
 
+/// Defines the allowed range for the scale parameter.
 fn scale_range() -> RangeInclusive<f32> {
     1.0..=15.0
 }
+/// Defines the allowed range for the detail parameter.
 fn detail_range() -> RangeInclusive<f32> {
     0.0..=5.0
 }
+/// Defines the allowed range for the roughness parameter.
 fn roughness_range() -> RangeInclusive<f32> {
     0.0..=1.0
 }
+/// Defines the allowed range for the lacunarity parameter.
 fn lacunarity_range() -> RangeInclusive<f32> {
     0.0..=10.0
 }
+/// Defines the allowed range for the distortion parameter.
 fn distortion_range() -> RangeInclusive<f32> {
     0.0..=10.0
 }
 
 impl UnoiseArgs {
+    /// Creates a random configuration within the value ranges defined for this type.
     #[deprecated]
     pub fn random() -> Self {
         Self {
@@ -44,6 +50,7 @@ impl UnoiseArgs {
         }
     }
 
+    /// Serializes the configuration to the project JSON format.
     pub fn json(&self) -> Value {
         json!({
             "unoise_scale": self.scale,
@@ -54,6 +61,7 @@ impl UnoiseArgs {
         })
     }
 
+    /// Reads the configuration from JSON and validates its types and allowed value ranges.
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
         let scale = validate_range(parse_f64(v, "unoise_scale")? as f32, scale_range())?;
         let detail = validate_range(parse_f64(v, "unoise_detail")? as f32, detail_range())?;

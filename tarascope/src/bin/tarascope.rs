@@ -28,6 +28,7 @@ enum CliModes {
     /// Create a parameterized kaleidoscope
     Custom(KaleidoArgs),
 }
+/// Reads the render mode and output directory, starts rendering, and stitches the frames into videos.
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {

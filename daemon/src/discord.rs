@@ -10,6 +10,7 @@ struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
+    /// Handles Discord messages and replies to the !ping command.
     async fn message(&self, ctx: Context, msg: Message) {
         println!("{msg:?}");
         if msg.content == "!ping" {
@@ -27,6 +28,7 @@ pub struct DiscordBot {
 }
 
 impl DiscordBot {
+    /// Creates the Discord client and starts its gateway connection in the background.
     pub fn new(token: String) -> Self {
         let http = Http::new(&token);
 
@@ -52,6 +54,7 @@ impl DiscordBot {
         }
     }
 
+    /// Sends a message to the Discord channel with the specified ID.
     pub async fn send_message(&self, channel_id: u64, message: String) {
             //let channel_id = ChannelId::new(1051294190455226458);
         let http = Http::new(&self.token);

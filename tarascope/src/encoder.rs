@@ -2,12 +2,14 @@ use std::{io, process::Command};
 
 use crate::{RenderJobDirectories, shader::KaleidoArgs};
 
+/// Creates both an MP4 and a GIF from the rendered frames.
 pub fn stitch_video(dirs: &RenderJobDirectories) -> io::Result<()> {
     stitch_video_mp4(dirs)?;
     stitch_video_gif(dirs)?;
     Ok(())
 }
 
+/// Uses ffmpeg to combine the numbered PNG frames into a GIF animation.
 pub fn stitch_video_gif(dirs: &RenderJobDirectories) -> io::Result<()> {
     println!("Stitching Video");
     let status = Command::new("ffmpeg")
@@ -29,6 +31,7 @@ pub fn stitch_video_gif(dirs: &RenderJobDirectories) -> io::Result<()> {
     Ok(())
 }
 
+/// Uses ffmpeg to combine the numbered PNG frames into an H.264 MP4 video.
 pub fn stitch_video_mp4(dirs: &RenderJobDirectories) -> io::Result<()> {
     println!("Stitching Video");
     let status = Command::new("ffmpeg")

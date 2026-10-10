@@ -31,10 +31,12 @@ const VERTICES: [Vertex; 6] = [
     Vertex { position: [-1.0, -1.0] }, // unten links
 ];
 
+/// Starts this binary and runs its command-line workflow.
 fn main() {
     nannou::app(model).run();
 }
 
+/// Creates the application state and sets up the window and required rendering resources.
 fn model(app: &App) -> Model {
     let w_id = app.new_window().size(1024, 1024).view(view).build().unwrap();
 
@@ -78,6 +80,7 @@ fn model(app: &App) -> Model {
 }
 
 // Draw the state of your `Model` into the given `Frame` here.
+/// Draws the current application state into the given frame.
 fn view(_app: &App, model: &Model, frame: Frame) {
     // Using this we will encode commands that will be submitted to the GPU.
     let mut encoder = frame.command_encoder();
@@ -101,6 +104,7 @@ fn view(_app: &App, model: &Model, frame: Frame) {
 }
 
 // See the `nannou::wgpu::bytes` documentation for why this is necessary.
+/// Returns the vertex data as a byte slice for the GPU buffer.
 fn vertices_as_bytes(data: &[Vertex]) -> &[u8] {
     unsafe { wgpu::bytes::from_slice(data) }
 }

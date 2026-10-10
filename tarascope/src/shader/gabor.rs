@@ -22,20 +22,25 @@ pub struct GaborArgs {
     orientation: f32,
 }
 
+/// Defines the allowed range for the scale parameter.
 fn scale_range() -> RangeInclusive<f32> {
     0.0..=20.0
 }
+/// Defines the allowed range for the frequency.
 fn frequency_range() -> RangeInclusive<f32> {
     0.0..=20.0
 }
+/// Defines the allowed range for anisotropy.
 fn anisotropy_range() -> RangeInclusive<f32> {
     0.0..=1.0
 }
+/// Defines the allowed angle range for orientation.
 fn orientation_range() -> RangeInclusive<f32> {
     0.0..=360.0
 }
 
 impl GaborArgs {
+    /// Creates a random configuration within the value ranges defined for this type.
     pub fn random() -> Self {
         Self {
             scale: random_range(scale_range()),
@@ -45,6 +50,7 @@ impl GaborArgs {
         }
     }
 
+    /// Serializes the configuration to the project JSON format.
     pub fn json(&self) -> Value {
         json!({
             "gabor_scale": self.scale,
@@ -54,6 +60,7 @@ impl GaborArgs {
         })
     }
 
+    /// Reads the configuration from JSON and validates its types and allowed value ranges.
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
         let scale = validate_range(parse_f64(v, "gabor_scale")? as f32, scale_range())?;
         let anisotropy = validate_range(parse_f64(v, "gabor_anisotropy")? as f32, anisotropy_range())?;

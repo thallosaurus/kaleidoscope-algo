@@ -15,6 +15,7 @@ struct ApiState {
     pool: Arc<Mutex<Pool<Postgres>>>,
     //handlebars: Handlebars<'a>
 }
+/// Returns all showcase entries as a JSON response.
 
 #[get("/")]
 async fn full(state: &State<ApiState>) -> String {
@@ -24,6 +25,7 @@ async fn full(state: &State<ApiState>) -> String {
 
     serde_json::to_string(&res).unwrap()
 }
+/// Accepts a kaleidoscope configuration and queues the render job.
 
 #[put("/", data = "<data>")]
 async fn new(state: &State<ApiState>, data: Json<KaleidoArgs>) -> String {
@@ -34,6 +36,7 @@ async fn new(state: &State<ApiState>, data: Json<KaleidoArgs>) -> String {
     insert_new_parameterized_job(&lock, data.0).await.unwrap();
     String::from("ok")
 }
+/// Generates random parameters, stores them, and queues the render job.
 
 #[put("/random")]
 async fn random(state: &State<ApiState>) -> String {
@@ -45,6 +48,7 @@ async fn random(state: &State<ApiState>) -> String {
     insert_new_parameterized_job(&lock, data).await.unwrap();
     String::from("ok")
 }
+/// Returns the showcase entry with the specified ID as a JSON response.
 
 #[get("/<id>")]
 async fn single(state: &State<ApiState>, id: &str) -> String {
@@ -58,6 +62,7 @@ async fn single(state: &State<ApiState>, id: &str) -> String {
 }
 
 /*#[get("/")]
+/// Renders the showcase data in the front page template.
 async fn frontpage(state: &State<ApiState<'_>>) -> Result<RawHtml<String>, std::io::Error> {
     let lock = state.pool.lock().await;
     let data = all_kaleidoscopes(&lock).await.unwrap();
@@ -69,6 +74,7 @@ async fn frontpage(state: &State<ApiState<'_>>) -> Result<RawHtml<String>, std::
     Ok(RawHtml(res))
 }*/
 
+/// Starts the web server with its routes and returns a shutdown sender.
 pub fn init_api(pool: Arc<Mutex<Pool<Postgres>>>, static_path: String) -> oneshot::Sender<()> {
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
 

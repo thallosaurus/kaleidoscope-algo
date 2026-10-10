@@ -4,12 +4,14 @@ struct Model {
     texture: wgpu::Texture
 }
 
+/// Starts the Nannou example that displays a texture.
 fn main() {
     nannou::app(model)
         .update(update)
         .run();
 }
 
+/// Creates the application state and sets up the window and required rendering resources.
 fn model(app: &App) -> Model {
     app.new_window().size(512, 512).view(view).build().unwrap();
     let assets = app.assets_path().unwrap();
@@ -20,10 +22,12 @@ fn model(app: &App) -> Model {
     Model { texture }
 }
 
+/// Updates the application state for a Nannou frame.
 fn update(_app: &App, _model: &mut Model, _update: Update) {
 
 }
 
+/// Draws the current application state into the given frame.
 fn view(app: &App, model: &Model, frame: Frame) {
     frame.clear(BLACK);
 

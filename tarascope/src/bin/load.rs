@@ -1,6 +1,7 @@
 use serde_json::Value;
 use tarascope::shader::KaleidoArgs;
 
+/// Reads an example saved JSON configuration and parses it as KaleidoArgs.
 fn main() {
     let data = r#"
     {

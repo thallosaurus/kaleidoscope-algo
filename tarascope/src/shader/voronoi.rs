@@ -7,12 +7,15 @@ use serde_json::{Value, json};
 
 use crate::shader::{ParseError, parse_f64, validate_range};
 
+/// Defines the allowed range for the scale parameter.
 fn scale_range() -> RangeInclusive<f32> {
     2.0..=20.0
 }
+/// Defines the allowed range for the detail parameter.
 fn detail_range() -> RangeInclusive<f32> {
     0.0..=3.0
 }
+/// Defines the allowed range for randomization.
 fn randomize_range() -> RangeInclusive<f32> {
     0.0..=1.0
 }
@@ -30,6 +33,7 @@ pub struct VoronoiArgs {
 }
 
 impl VoronoiArgs {
+    /// Creates a random configuration within the value ranges defined for this type.
     pub fn random() -> Self {
         Self {
             scale: random_range(scale_range()),
@@ -37,6 +41,7 @@ impl VoronoiArgs {
             randomize: random_range(randomize_range()),
         }
     }
+    /// Serializes the configuration to the project JSON format.
     pub fn json(&self) -> Value {
         json!({
             "voronoi_scale": self.scale,
@@ -45,6 +50,7 @@ impl VoronoiArgs {
         })
     }
 
+    /// Reads the configuration from JSON and validates its types and allowed value ranges.
     pub fn from_json(v: &Value) -> Result<Self, ParseError> {
         let scale = validate_range(parse_f64(v, "voronoi_scale")? as f32, scale_range())?;
         let detail = validate_range(parse_f64(v, "voronoi_detail")? as f32, detail_range())?;

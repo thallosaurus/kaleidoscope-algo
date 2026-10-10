@@ -6,7 +6,7 @@ use std::{
 
 use clap::Parser;
 use log::{debug, error, info};
-use sqlx::{Pool, Postgres, postgres::PgListener};
+use sqlx::{Pool, Postgres, postgres::{PgListener, PgNotification}};
 use tarascope::{
     Tarascope,
     shader::OutputArgs,
@@ -32,6 +32,7 @@ struct Args {
     out: OutputArgs,
 }
 
+/// Initializes the database, render and publishing queues, and API, then handles PostgreSQL notifications.
 pub async fn run() -> Result<(), Box<dyn Error>> {
     // parse cli args
     let args = Args::parse();
