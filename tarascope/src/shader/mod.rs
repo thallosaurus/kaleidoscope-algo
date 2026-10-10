@@ -55,13 +55,19 @@ pub struct KaleidoArgs {
     composite: CompositeArgs,
 
     #[clap(flatten)]
-    frames: FrameArgs,
+    pub frames: FrameArgs,
 
     #[clap(skip = Uuid::new_v4().to_string())]
     id: String,
 
     //#[clap(flatten)]
     //output: OutputArgs,
+}
+
+impl From<Value> for KaleidoArgs {
+    fn from(value: Value) -> Self {
+        Self::from_json(value).expect("error while parsing json")
+    }
 }
 
 impl KaleidoArgs {
@@ -94,7 +100,7 @@ impl KaleidoArgs {
     }
 
     /// Reads the configuration from JSON and validates its types and allowed value ranges.
-    pub fn from_json(v: Value) -> Result<Self, ParseError> {
+    fn from_json(v: Value) -> Result<Self, ParseError> {
         println!("{:?}", v.as_object());
         let repetition = validate_range(parse_u64(&v, "repetition")? as u8, repetition_range())?;
         let scaling = validate_range(parse_f64(&v, "scaling")? as f32, scaling_range())?;
@@ -461,12 +467,12 @@ impl TexturedArgs {
     }
 }
 #[derive(Parser, Debug, Clone, Serialize, Deserialize)]
-struct FrameArgs {
+pub struct FrameArgs {
     #[arg(long)]
-    frame_start: u16,
+    pub frame_start: u16,
 
     #[arg(long)]
-    frame_end: u16,
+    pub frame_end: u16,
 }
 
 impl FrameArgs {
@@ -495,7 +501,7 @@ impl Default for FrameArgs {
     fn default() -> Self {
         Self {
             frame_start: 1,
-            frame_end: 300,
+            frame_end: 10,
         }
     }
 }

@@ -13,9 +13,9 @@ use tokio::{
     sync::{Mutex, mpsc::UnboundedSender},
 };
 
-use crate::{exec::run, shader::KaleidoArgs};
+use crate::{exec::run_executor, shader::KaleidoArgs};
 pub mod encoder;
-mod exec;
+pub mod exec;
 pub mod shader;
 
 static BLEND_FILE: &[u8] = include_bytes!("../kaleido.blend");
@@ -142,6 +142,15 @@ impl CommandType {
             CommandType::Still(_, kaleido_args) => kaleido_args.get_id(),
         }
     }
+
+    #[cfg(test)]
+    fn command(&self, project: &Path, loader: &Path, dirs: &RenderJobDirectories) -> Command {
+        println!("using debug cmd adapter");
+        let cmd = Command::new("echo");
+        cmd
+    }
+
+    #[cfg(not(test))]
     /// Builds the Blender process command for either a still image or an animation render.
     fn command(&self, project: &Path, loader: &Path, dirs: &RenderJobDirectories) -> Command {
         match self {
@@ -254,7 +263,30 @@ impl Tarascope {
         // wait until the render has finished
         //let output = child.wait_with_output()?;
 
-        let status = run(&mut cmd, &dirs, sender).await?;
+        let status = run_executor(&mut cmd, &dirs, sender).await?;
         Ok(KaleidoOutput::new(status, dirs.output_dir()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{BLEND_FILE, CommandType, PYTHON_LOADER, RenderJobDirectories, extract_static_file, shader::KaleidoArgs};
+
+    fn test_debug_executor() {
+        let cmd = CommandType::Animated(0, 100, KaleidoArgs::random());
+                let project_file = extract_static_file(BLEND_FILE).unwrap();
+        let project_borrow = project_file.try_lock().unwrap();
+        let tmp_project_path = project_borrow.path();
+
+                // same with the loader file
+        let loader_file = extract_static_file(PYTHON_LOADER).unwrap();
+        let loader_borrow = loader_file.try_lock().unwrap();
+        let tmp_loader_path = loader_borrow.path();
+
+        
+        let r = cmd.command(tmp_project_path, tmp_loader_path, RenderJobDirectories {
+            _directory: self.directory.clone(),
+            id: job_id.clone(),
+        })
     }
 }

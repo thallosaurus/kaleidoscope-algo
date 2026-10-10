@@ -197,7 +197,7 @@ pub async fn get_specific_job_parameters(
 
     println!("db: {:?}", vvvv);
 
-    Ok(KaleidoArgs::from_json(vvvv).unwrap())
+    Ok(KaleidoArgs::from(vvvv))
 }
 
 /// Loads today’s published showcase IDs and their thumbnails.

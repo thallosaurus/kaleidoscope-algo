@@ -7,12 +7,12 @@ fn main() {
     {
     "composite": {
         "composite_hue": 0.3856428861618042,
-        "composite_lens_dispersion": -0.3,
-        "composite_lens_distortion": -0.1,
+        "composite_lens_dispersion": -0.5,
+        "composite_lens_distortion": -0.6,
         "composite_saturation": 1.172764778137207
     },
     "frames": {
-        "_frames_max": 300,
+        "_frames_max": 100,
         "_frames_start": 1
     },
     "id": "32a93579-7b4b-43ac-b43b-a8ccab30ac62",
@@ -33,6 +33,6 @@ fn main() {
     "#;
     
     let v: Value = serde_json::from_str(&String::from(data)).unwrap();
-    let data = KaleidoArgs::from_json(v).unwrap();
+    let data = KaleidoArgs::from(v);
     println!("{:?}", data);
 }
