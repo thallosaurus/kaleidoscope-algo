@@ -27,8 +27,8 @@ const job = Kaleidoscope.parse({
         "end": 300
     },
     "resolution": {
-        "width": 1080,
-        "height": 1920
+        "width": 1080 * 2,
+        "height": 1920 * 2
     },
     "id": randomUUID()
 })
