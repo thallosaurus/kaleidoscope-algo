@@ -2,6 +2,7 @@ import { UUID } from "node:crypto";
 import * as path from "jsr:@std/path";
 import { TKaleidoscope } from "./arguments.ts";
 import { exists } from "jsr:@std/fs/exists";
+import { stitchVideo } from "./encoder.ts";
 
 
 //import loader_bytes from "../loader.py" with { type: "bytes" };
@@ -9,9 +10,9 @@ import { exists } from "jsr:@std/fs/exists";
 
 const BLENDER_PATH_MAC = "/Applications/Blender.app/Contents/MacOS/Blender";
 const loader_bytes = await Deno.readFile(new URL("../../loader.py", import.meta.url));
-const kaleido_bytes = await Deno.readFile(new URL("../../kaleido.blend", import.meta.url));
+const kaleido_bytes = await Deno.readFile(new URL("../../kaleido_hdr.blend", import.meta.url));
 
-class RenderJobDirectory {
+export class RenderJobDirectory {
     #directory: string
     #id: string
     constructor(id: string, dir: string) {
@@ -109,6 +110,8 @@ async function handleUpdateSocket(dirs: RenderJobDirectory, onUpdate: RenderStat
     const buffer = new Uint8Array(4096);
     let pending = "";
 
+    conn.write(new TextEncoder().encode("hello" + "\n"))
+
     abort.signal.addEventListener("abort", () => {
         listener.close();
         Deno.removeSync(dirs.socket)
@@ -126,7 +129,8 @@ async function handleUpdateSocket(dirs: RenderJobDirectory, onUpdate: RenderStat
             for (const line of lines) {
                 if (!line.trim()) continue;
                 const update = JSON.parse(line);
-                //console.log("Blender Status:", update);
+
+                conn.write(new TextEncoder().encode("hello" + "\n"))
                 onUpdate(update)
             }
         }
@@ -228,6 +232,7 @@ function renderCommand(dirs: RenderJobDirectory, job: TKaleidoscope) {
         args: argument(),
         env: {
             STATUS_SOCKET: dirs.socket,
+            //PYTHONUNBUFFERED: "1",
         },
         stdout: "piped",
         stderr: "piped"
@@ -253,6 +258,11 @@ export async function renderBlenderProject({ job, outputPath }: BlenderRenderPro
     //write parameters
     const paramsJson = JSON.stringify(job);
     await Deno.writeTextFile(dirs.parametersPath, paramsJson, { create: true });
-    return await renderJob(job, dirs, console.log);
+    const j = await renderJob(job, dirs, console.log);
+    if (j.success) {
+        stitchVideo(dirs);
+    } else {
+        console.log("no success", j)
+    }
     //console.log(dirs);
 }

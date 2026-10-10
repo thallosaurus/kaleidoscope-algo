@@ -4,7 +4,7 @@ import { renderBlenderProject } from "./src/renderer/executor.ts";
 import z from "zod";
 import { randomKaleidoscope } from "./src/renderer/random.ts";
 
-const job = Kaleidoscope.parse({
+/*const job = Kaleidoscope.parse({
   "id": randomUUID(),
   "composite": {
     "hue": 0.4,
@@ -31,9 +31,16 @@ const job = Kaleidoscope.parse({
     "noise_roughness": 0.1,
     "noise_scale": 3.0,
   }
-});
+});*/
 
-const random = randomKaleidoscope();
+const random = randomKaleidoscope({
+  end: 300,
+  start: 1
+});
 console.log(random);
 
-renderBlenderProject(random, "./output")
+await renderBlenderProject({
+  job: random,
+  outputPath: "./output",
+  type: "blender"
+})

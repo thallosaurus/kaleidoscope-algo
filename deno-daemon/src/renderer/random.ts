@@ -19,12 +19,28 @@ function randomTexture(): TKaleidoscope["texture"] {
       };
     case 1:
       return {
+        type: "voronoi",
+        voronoi_detail: between(0, 3),
+        voronoi_scale: between(2, 20),
+        voronoi_randomize: between(0, 1)
+      }
+    case 2:
+      return {
+        type: "wave",
+        wave_detail: between(0, 5),
+        wave_detail_roughness: between(0, 1),
+        wave_distortion: between(-10, 10),
+        wave_phase_offset: between(0, 50),
+        wave_scale: between(0.2, 5)
+      }
+    case 3:
+      return {
         type: "magic",
         magic_depth: integerBetween(1, 10),
         magic_scale: between(0, 5),
         magic_dist: between(0, 5),
       };
-    case 2:
+    case 4:
       return {
         type: "noise",
         noise_scale: between(1, 15),
@@ -46,7 +62,10 @@ function randomTexture(): TKaleidoscope["texture"] {
   }
 }
 
-export function randomKaleidoscope(): TKaleidoscope {
+export function randomKaleidoscope(default_frames = {
+  start: 1,
+  end: 50
+}): TKaleidoscope {
   return Kaleidoscope.parse({
     id: randomUUID(),
     texture: randomTexture(),
@@ -62,11 +81,14 @@ export function randomKaleidoscope(): TKaleidoscope {
       hue: between(0, 1),
       saturation: between(1, 2),
     },
+    resolution: {
+      width: 1080,
+      height: 1920
+    },
     frames: {
       type: "animated",
-      start: 1,
-      end: 50
+      ...default_frames
       //frame: integerBetween(1, 100),
-    },
+    }
   });
 }

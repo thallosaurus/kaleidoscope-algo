@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-const { string, uuidv4, literal, discriminatedUnion, object, float32, int } = z;
+const { number, string, uuidv4, literal, discriminatedUnion, object, float32, int } = z;
 
 export const Kaleidoscope = object({
     //texture: TextureSelection,
@@ -36,9 +36,9 @@ export const Kaleidoscope = object({
         }),
         object({
             type: literal("voronoi"),
-            voronoiscale: float32().gte(2.0).lte(20.0),
-            voronoidetail: float32().gte(0.0).lte(3.0),
-            voronoirandomize: float32().gte(0.0).lte(1.0)
+            voronoi_scale: float32().gte(2.0).lte(20.0),
+            voronoi_detail: float32().gte(0.0).lte(3.0),
+            voronoi_randomize: float32().gte(0.0).lte(1.0)
         }),
         object({
             type: literal("wave"),
@@ -76,6 +76,10 @@ export const Kaleidoscope = object({
             frame: int()
         })
     ]),
+    resolution: object({
+        width: int(),
+        height: int()
+    }),
     id: uuidv4()
 })
 

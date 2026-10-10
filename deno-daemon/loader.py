@@ -25,7 +25,7 @@ def import_texture(path):
     return tex
 
 def set_property(key, value):
-    print("Setting " + key + " to " + str(value) + "\n")
+    print("Setting " + key + " to " + str(value), flush=True)
     bpy.data.objects["Plane"][key] = value
 
 def type_to_tex_index(s: str):
@@ -44,8 +44,12 @@ def type_to_tex_index(s: str):
     elif s == "textured":
         return 6
 
-def r_init(scene):
-    global data
+def pre_frame(scene):
+    global sock
+    l = sock.recv(4096)
+    #print(l, flush=True)
+    
+def update_props(data):
     set_property("texture_index", type_to_tex_index(data["texture"]["type"]))
     set_property("repetition", data["polar"]["repetition"])
     set_property("scaling", data["polar"]["scaling"])
@@ -63,6 +67,15 @@ def r_init(scene):
     else:
         for key in data["texture"].keys():
             set_property(key, data["texture"][key])
+
+def r_init(scene):
+    global data
+    
+    scene.render.resolution_x = data["resolution"]["width"]
+    scene.render.resolution_y = data["resolution"]["height"]
+    #scene.render.resolution_precentage = 100
+    
+    update_props(data)
             
     # save_blend_file(scene)
     # bpy.ops.wm.save_as_mainfile(filepath=data["output_directory"] + "/" + data["id"] + "/project.blend")
@@ -79,14 +92,13 @@ def post_render(scene):
 
 if __name__ == "__main__":
     print("main function")
+    sock.connect(sock_path)
+    data = decode_input_data(sys.argv[-1])
+
     bpy.app.debug_wm = True
-    
     bpy.app.handlers.render_init.clear()
     bpy.app.handlers.render_init.append(r_init)
+    bpy.app.handlers.render_pre.clear()
+    bpy.app.handlers.render_pre.append(pre_frame)
     bpy.app.handlers.render_post.clear()
     bpy.app.handlers.render_post.append(post_render)
-
-    sock.connect(sock_path)
-
-#back_channel = open('/dev/fd/' + writer_fd, 'w')
-    data = decode_input_data(sys.argv[-1])
