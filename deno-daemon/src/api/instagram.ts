@@ -138,7 +138,9 @@ export function createInstagramClient(config: InstagramConfig) {
     async publishReel(options: ReelOptions, waitOptions: WaitOptions = {}): Promise<PublishedMedia> {
       const container = await this.createReelContainer(options);
       await this.waitForContainer(container.id, waitOptions);
-      return await this.publishContainer(container);
+      const c = await this.publishContainer(container);
+      const status = await this.getContainerStatus(container.id);
+      console.log(status);
     },
   };
 }
