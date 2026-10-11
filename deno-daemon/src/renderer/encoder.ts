@@ -32,7 +32,7 @@ function stitchMp4(dirs: RenderJobDirectory) {
                 "-pix_fmt",
                 "yuv420p",
                 outputPath
-            ]
+            ],
         }),
         outputPath
     }
