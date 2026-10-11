@@ -141,6 +141,7 @@ export function createInstagramClient(config: InstagramConfig) {
       const c = await this.publishContainer(container);
       const status = await this.getContainerStatus(container.id);
       console.log(status);
+      return c
     },
   };
 }
