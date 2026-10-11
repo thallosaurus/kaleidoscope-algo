@@ -2,6 +2,18 @@ import * as z from "zod";
 
 const { number, string, uuidv4, literal, discriminatedUnion, object, float32, int } = z;
 
+export const Frames = discriminatedUnion("type", [
+    object({
+        type: literal("animated"),
+        start: int().gt(0),
+        end: int().gt(0)
+    }),
+    object({
+        type: literal("still"),
+        frame: int()
+    })
+])
+
 export const Kaleidoscope = object({
     //texture: TextureSelection,
     texture: discriminatedUnion("type", [
@@ -65,17 +77,7 @@ export const Kaleidoscope = object({
         hue: float32().gte(0.0).lte(1.0),
         saturation: float32().gte(1.0).lte(2.0),
     }),
-    frames: discriminatedUnion("type", [
-        object({
-            type: literal("animated"),
-            start: int().gt(0),
-            end: int().gt(0)
-        }),
-        object({
-            type: literal("still"),
-            frame: int()
-        })
-    ]),
+    frames: Frames,
     resolution: object({
         width: int(),
         height: int()
@@ -83,4 +85,6 @@ export const Kaleidoscope = object({
     id: uuidv4()
 })
 
+
 export type TKaleidoscope = z.infer<typeof Kaleidoscope>;
+export type TFrames = z.infer<typeof Frames>;

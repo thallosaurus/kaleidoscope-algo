@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { Kaleidoscope, type TKaleidoscope } from "./arguments.ts";
+import { Kaleidoscope, TFrames, type TKaleidoscope } from "./arguments.ts";
 
 const between = (min: number, max: number) =>
   min + Math.random() * (max - min);
@@ -62,7 +62,7 @@ function randomTexture(): TKaleidoscope["texture"] {
   }
 }
 
-export function randomKaleidoscope(default_frames: any): TKaleidoscope {
+export function randomKaleidoscope(default_frames: TFrames): TKaleidoscope {
   return Kaleidoscope.parse({
     id: randomUUID(),
     texture: randomTexture(),

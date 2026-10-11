@@ -1,0 +1,11 @@
+localhost {
+    respond "Hello, World!"
+}
+
+mothership.local {
+    respond "sup"
+}
+
+lenna.duckdns.org {
+    respond "we're online bitches'
+}

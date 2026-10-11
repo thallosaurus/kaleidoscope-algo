@@ -8,8 +8,16 @@ const random = randomKaleidoscope({
 });
 console.log(random);
 
-await renderBlenderProject({
+const output = await renderBlenderProject({
   job: random,
   outputPath: "./output",
   type: "blender"
-})
+});
+
+switch (output.type) {
+  case "still":
+    break
+  case "video":
+    console.log("upload to instagram")
+    break;
+}

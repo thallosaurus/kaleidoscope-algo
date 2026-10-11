@@ -1,6 +1,6 @@
 import { TKaleidoscope } from "./arguments.ts";
 import { exists } from "jsr:@std/fs/exists";
-import { stitchVideo } from "./encoder.ts";
+import { KaleidoVideo, stitchVideo } from "./encoder.ts";
 
 
 //import loader_bytes from "../loader.py" with { type: "bytes" };
@@ -246,7 +246,13 @@ type BlenderRenderProject = {
     onUpdate?: RenderStatusCallback
 };
 
-export async function renderBlenderProject({ job, outputPath, onUpdate }: BlenderRenderProject) {
+type KaleidoStill = {
+    type: "still",
+    img: string,
+    id: string
+}
+
+export async function renderBlenderProject({ job, outputPath, onUpdate }: BlenderRenderProject): Promise<KaleidoVideo | KaleidoStill> {
     const dirs = new RenderJobDirectory(job.id, outputPath)
     await dirs.createProjectFolder()
 
@@ -262,9 +268,15 @@ export async function renderBlenderProject({ job, outputPath, onUpdate }: Blende
     const j = await renderJob(job, dirs, onUpdate ?? console.log);
     if (job.frames.type == "animated") {
         if (j.success) {
-            return stitchVideo(dirs);
+            return await stitchVideo(dirs)
         } else {
-            console.error(j);
+            throw new Error("command didnt yield a success")
+        }
+    } else {
+        return {
+            type: "still",
+            img: "",
+            id: dirs.id
         }
     }
     //console.log(dirs);
