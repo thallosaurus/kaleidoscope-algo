@@ -5,3 +5,4 @@ output/
 __pycache__/
 .sqlx/
 *.blend1
+dist/

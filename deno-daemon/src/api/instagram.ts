@@ -5,6 +5,8 @@
  * not enough); the account must be an eligible professional account.
  */
 
+import { BlenderRenderProject } from "../renderer/executor.ts";
+
 export type InstagramConfig = {
   /** Graph API version, for example `vXX.0`. Keep this explicit so it can be
    * upgraded deliberately when Meta retires an API version. */
@@ -69,11 +71,21 @@ export function createInstagramClient(config: InstagramConfig) {
       throw new Error(`Instagram API returned non-JSON (${response.status} ${response.statusText})`);
     }
 
-    const graphError = data as GraphError;
+    /*const graphError = data as GraphError;
     if (!response.ok || graphError.error) {
       const detail = graphError.error?.message ?? `${response.status} ${response.statusText}`;
       const code = graphError.error?.code;
       throw new Error(`Instagram API error${code === undefined ? "" : ` ${code}`}: ${detail}`);
+    }*/
+
+    if (!response.ok || (data as GraphError).error) {
+      console.error(data);
+      console.error("Meta API response:", JSON.stringify(data, null, 2));
+
+      const graphError = data as GraphError;
+      throw new Error(
+        `Instagram API error: ${JSON.stringify(graphError.error ?? data)}`
+      );
     }
     return data as T;
   }
@@ -129,4 +141,29 @@ export function createInstagramClient(config: InstagramConfig) {
       return await this.publishContainer(container);
     },
   };
+}
+
+type InstagramPost = {
+  caption: string
+}
+
+export async function postInstagram(project: BlenderRenderProject, post: InstagramPost) {
+  const base = "lenna.duckdns.org";
+  const videoUrl = new URL(`https://${base}/${project.job.id}/video.hdr.mp4`);
+  console.log("posting", videoUrl);
+
+  const accessToken = Deno.env.get("ACCESS_TOKEN") ?? "";
+  const instagramUserId = Deno.env.get("INSTAGRAM_USER_ID") ?? "";
+
+  const client = createInstagramClient({
+    apiVersion: "v24.0",
+    accessToken,
+    instagramUserId
+  })
+
+  await client.publishReel({
+    shareToFeed: true,
+    videoUrl,
+    ...post,
+  })
 }
