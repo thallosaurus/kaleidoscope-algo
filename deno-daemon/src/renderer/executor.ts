@@ -1,6 +1,7 @@
 import { TKaleidoscope } from "./arguments.ts";
 import { exists } from "jsr:@std/fs/exists";
 import { KaleidoVideo, stitchVideo } from "./encoder.ts";
+import { expandGlob } from "jsr:@std/fs/expand-glob";
 
 
 //import loader_bytes from "../loader.py" with { type: "bytes" };
@@ -239,7 +240,7 @@ function renderCommand(dirs: RenderJobDirectory, job: TKaleidoscope) {
     })
 }
 
-type BlenderRenderProject = {
+export type BlenderRenderProject = {
     type: "blender",
     job: TKaleidoscope,
     outputPath: string,
@@ -252,7 +253,7 @@ type KaleidoStill = {
     id: string
 }
 
-export async function renderBlenderProject({ job, outputPath, onUpdate }: BlenderRenderProject): Promise<KaleidoVideo | KaleidoStill> {
+export async function renderBlenderProject({ type, job, outputPath, onUpdate }: BlenderRenderProject): Promise<KaleidoVideo | KaleidoStill> {
     const dirs = new RenderJobDirectory(job.id, outputPath)
     await dirs.createProjectFolder()
 
@@ -280,4 +281,22 @@ export async function renderBlenderProject({ job, outputPath, onUpdate }: Blende
         }
     }
     //console.log(dirs);
+}
+
+async function deleteFiles(directory: string, pattern: string) {
+  for await (const entry of expandGlob(pattern, {
+    root: directory,
+    includeDirs: false,
+  })) {
+    if (entry.isFile) {
+      console.log(`Deleting ${entry.path}`);
+      await Deno.remove(entry.path);
+    }
+  }
+}
+
+export async function cleanup_frames({ job, outputPath }: BlenderRenderProject) {
+    const dirs = new RenderJobDirectory(job.id, outputPath)
+    await Deno.rename(dirs.projectFolderPath + "/frame_00000.png", dirs.projectFolderPath + "/thumbnail.png")
+    await deleteFiles(dirs.projectFolderPath, "frame_*.png")
 }

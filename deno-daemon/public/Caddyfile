@@ -1,7 +1,9 @@
 localhost {
-    respond "Hello, World!"
+    root /opt/kaleidos
+    file_server browse
 }
 
 lenna.duckdns.org {
-    respond "we're online bitches"
+    root /opt/kaleidos
+    file_server
 }

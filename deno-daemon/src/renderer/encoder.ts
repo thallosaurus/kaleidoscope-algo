@@ -82,7 +82,7 @@ export async function stitchVideo(dirs: RenderJobDirectory): Promise<KaleidoVide
     const mp4Task = stitchMp4(dirs);
     const hdrTask = stitchHdrMp4(dirs);
 
-    await Promise.all([gifTask.cmd.spawn(), mp4Task.cmd.spawn(), hdrTask.cmd.spawn()])
+    await Promise.all([gifTask.cmd.output(), mp4Task.cmd.output(), hdrTask.cmd.output()])
 
     return {
         id: dirs.id,
