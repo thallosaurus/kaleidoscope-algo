@@ -1,5 +1,5 @@
-import { createInstagramClient } from "./src/api/instagram.ts";
-import { BlenderRenderProject, cleanup_frames, renderBlenderProject } from "./src/renderer/executor.ts";
+import { postInstagram } from "./src/api/instagram.ts";
+import { BlenderRenderProject, renderBlenderProject } from "./src/renderer/executor.ts";
 import { randomKaleidoscope } from "./src/renderer/random.ts";
 
 
