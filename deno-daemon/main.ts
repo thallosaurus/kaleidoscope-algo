@@ -15,7 +15,7 @@ const project: BlenderRenderProject = {
 
 async function postInstagram(project: BlenderRenderProject) {
   const base = "lenna.duckdns.org";
-  const videoUrl = new URL(`https://${base}/${project.job}/video.hdr.mp4`);
+  const videoUrl = new URL(`https://${base}/${project.job.id}/video.hdr.mp4`);
   console.log("posting", videoUrl);
 
   const accessToken = Deno.env.get("ACCESS_TOKEN") ?? "";
