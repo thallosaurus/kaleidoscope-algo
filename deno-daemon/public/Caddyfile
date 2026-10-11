@@ -6,4 +6,5 @@ localhost {
 lenna.duckdns.org {
     root /opt/kaleidos
     file_server
+    log
 }
