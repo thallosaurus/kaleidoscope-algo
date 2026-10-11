@@ -29,7 +29,7 @@ type InstagramPost = {
 
 const project: BlenderRenderProject = {
   job: randomKaleidoscope({
-    end: 10,
+    end: 300,
     start: 1,
     type: "animated"
   }),
