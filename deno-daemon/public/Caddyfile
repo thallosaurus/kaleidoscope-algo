@@ -5,6 +5,10 @@ localhost {
 
 lenna.duckdns.org {
     root /opt/kaleidos
+
+    @blocked not path_regexp allowed ^.*/video\.hdr\.mp4$
+    respond @blocked 403
+
     file_server
     log
 }
