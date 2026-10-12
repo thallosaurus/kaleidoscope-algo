@@ -21,6 +21,6 @@ if (!id) {
     }
 
     console.log("upload to instagram")
-    postInstagram(project, { caption: tags.map(v => "#" + v).join(" ") });
+    await postInstagram(project, { caption: tags.map(v => "#" + v).join(" ") });
     console.log("upload finished")
 }
