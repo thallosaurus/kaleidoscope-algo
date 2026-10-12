@@ -63,7 +63,7 @@ function randomTexture(): TKaleidoscope["texture"] {
 }
 
 export function randomKaleidoscope(default_frames: TFrames): TKaleidoscope {
-  return Kaleidoscope.parse({
+  const k = Kaleidoscope.parse({
     id: randomUUID(),
     texture: randomTexture(),
     polar: {
@@ -75,7 +75,7 @@ export function randomKaleidoscope(default_frames: TFrames): TKaleidoscope {
     composite: {
       lens_distortion: between(-1, -0.5),
       lens_dispersion: between(-1, -0.5),
-      hue: between(0, 1),
+      composite_hue: between(0, 1),
       saturation: between(1, 2),
     },
     resolution: {
@@ -87,4 +87,8 @@ export function randomKaleidoscope(default_frames: TFrames): TKaleidoscope {
     }
       //frame: integerBetween(1, 100),
   });
+
+  console.log(k);
+
+  return k;
 }

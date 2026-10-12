@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-const { number, string, uuidv4, literal, discriminatedUnion, object, float32, int } = z;
+const { string, uuidv4, literal, discriminatedUnion, object, float32, int } = z;
 
 export const Frames = discriminatedUnion("type", [
     object({
@@ -74,7 +74,7 @@ export const Kaleidoscope = object({
     composite: object({
         lens_distortion: float32().gte(-1.0).lte(-0.5),
         lens_dispersion: float32().gte(-1.0).lte(-0.5),
-        hue: float32().gte(0.0).lte(1.0),
+        composite_hue: float32().gte(0.0).lte(1.0),
         saturation: float32().gte(1.0).lte(2.0),
     }),
     frames: Frames,

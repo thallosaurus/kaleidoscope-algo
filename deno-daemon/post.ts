@@ -9,7 +9,7 @@ if (!id) {
         "honk", "digitalgoose", "kaleidoscope", "blender", "render", "digital"
     ]
 
-    console.log(id)
+    //console.log(id)
     const dirs = new RenderJobDirectory(id, "./output");
     const job = JSON.parse(Deno.readTextFileSync(dirs.parametersPath));
     
