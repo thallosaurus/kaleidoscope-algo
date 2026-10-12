@@ -1,6 +1,9 @@
 {
   "tasks": {
-    "dev": "deno run --watch --allow-net main.ts"
+    "dev": "deno run --watch --allow-net main.ts",
+    "still": "deno run -A --env-file render_stills.ts",
+    "wallpaper": "deno run -A --env-file render_wallpaper.ts",
+    "instagram": "deno run -A --env-file render_instagram_video.ts"
   },
   "imports": {
     "@hono/hono": "jsr:@hono/hono@^4.13.13",
