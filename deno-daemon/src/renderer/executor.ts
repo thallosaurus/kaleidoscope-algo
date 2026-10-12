@@ -281,7 +281,7 @@ export async function renderBlenderProject({ type, job, outputPath, cleanup, onU
     } else {
         return {
             type: "still",
-            img: "",
+            img: dirs.projectFolderPath + "/frame_00000.png",
             id: dirs.id
         }
     }
