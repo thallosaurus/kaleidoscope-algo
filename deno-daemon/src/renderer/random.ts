@@ -80,6 +80,7 @@ export function randomKaleidoscope(default_frames: TFrames, resolution: TResolut
       composite_lens_dispersion: between(-1, -0.5),
       composite_hue: between(0, 1),
       composite_saturation: between(1, 2),
+      composite_filter: between(0, 1)
     },
     resolution,
     frames: {

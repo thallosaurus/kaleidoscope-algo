@@ -81,6 +81,7 @@ export const Kaleidoscope = object({
         composite_lens_dispersion: float32().gte(-1.0).lte(-0.5),
         composite_hue: float32().gte(0.0).lte(1.0),
         composite_saturation: float32().gte(1.0).lte(2.0),
+        composite_filter: float32().gte(0.0).lte(1.0)
     }),
     frames: Frames,
     resolution: Resolution,
