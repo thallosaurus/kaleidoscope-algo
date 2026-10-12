@@ -14,6 +14,11 @@ export const Frames = discriminatedUnion("type", [
     })
 ])
 
+export const Resolution = object({
+    width: int(),
+    height: int()
+});
+
 export const Kaleidoscope = object({
     //texture: TextureSelection,
     texture: discriminatedUnion("type", [
@@ -78,13 +83,11 @@ export const Kaleidoscope = object({
         saturation: float32().gte(1.0).lte(2.0),
     }),
     frames: Frames,
-    resolution: object({
-        width: int(),
-        height: int()
-    }),
+    resolution: Resolution,
     id: uuidv4()
 })
 
 
 export type TKaleidoscope = z.infer<typeof Kaleidoscope>;
 export type TFrames = z.infer<typeof Frames>;
+export type TResolution = z.infer<typeof Resolution>;

@@ -28,7 +28,7 @@ switch (output.type) {
     break
   case "video":
     console.log("upload to instagram")
-    await postInstagram(project, { caption: tags.map(v => "#" + v).join(" ") });
+    await postInstagram(project, { caption: "🪿\n" + tags.map(v => "#" + v).join(" ") });
     console.log("upload finished")
     break;
 }
