@@ -77,10 +77,10 @@ export const Kaleidoscope = object({
         pingpong: float32(),
     }),
     composite: object({
-        lens_distortion: float32().gte(-1.0).lte(-0.5),
-        lens_dispersion: float32().gte(-1.0).lte(-0.5),
+        composite_lens_distortion: float32().gte(-1.0).lte(-0.5),
+        composite_lens_dispersion: float32().gte(-1.0).lte(-0.5),
         composite_hue: float32().gte(0.0).lte(1.0),
-        saturation: float32().gte(1.0).lte(2.0),
+        composite_saturation: float32().gte(1.0).lte(2.0),
     }),
     frames: Frames,
     resolution: Resolution,
