@@ -60,7 +60,18 @@ export class HttpApi {
     this.controller.signal.addEventListener("abort", () => this.db.close());
 
     this.worker.addEventListener("message", (e) => {
-      this.db.prepare("INSERT INTO frames (kaleidoid, frame_count) VALUES (?, ?)").run(e.data.id, e.data.frame)
+      if (e.data.type == "status") {
+
+        switch (e.data.type) {
+          case "status":
+            this.db.prepare("INSERT INTO frames (kaleidoid, frame_count) VALUES (?, ?)").run(e.data.id, e.data.frame)
+            break;
+
+          case "finish":
+            console.log(e.data);
+            break;
+        }
+      }
     })
 
     this.app.use(contextStorage());
