@@ -6,8 +6,10 @@
     "instagram": "deno run -A --env-file render_instagram_video.ts"
   },
   "imports": {
-    "@hono/hono": "jsr:@hono/hono@^4.13.13",
+    "@hono/standard-validator": "npm:@hono/standard-validator@^0.4.0",
+    "@hono/zod-validator": "npm:@hono/zod-validator@^0.9.1",
     "@std/assert": "jsr:@std/assert@1",
+    "hono": "npm:hono@^4.13.13",
     "zod": "npm:zod@^4.6.5"
   }
 }
