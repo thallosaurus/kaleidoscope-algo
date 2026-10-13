@@ -4,7 +4,6 @@ import { zValidator } from "@hono/zod-validator";
 import { Kaleidoscope } from "../renderer/arguments.ts";
 import { DatabaseSync } from "node:sqlite";
 import { contextStorage, getContext } from "hono/context-storage"
-import { BlenderRenderProject } from "../renderer/executor.ts";
 import { randomKaleidoscope } from "../renderer/random.ts";
 
 type Env = {
