@@ -7,8 +7,7 @@ const project: BlenderRenderProject = {
     frame: 0
   }),
   outputPath: "./output",
-  type: "blender",
-  cleanup: true
+  type: "blender"
 }
 
 const output = await renderBlenderProject(project);

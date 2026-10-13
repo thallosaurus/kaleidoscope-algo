@@ -2,16 +2,15 @@ import { postInstagram } from "./src/api/instagram.ts";
 import { BlenderRenderProject, renderBlenderProject } from "./src/renderer/executor.ts";
 import { randomKaleidoscope } from "./src/renderer/random.ts";
 
-
 const project: BlenderRenderProject = {
   job: randomKaleidoscope({
     end: 100,
     start: 1,
-    type: "animated"
+    type: "animated",
+    cleanup: true
   }),
   outputPath: "./output",
   type: "blender",
-  cleanup: true
 }
 
 const start = performance.now();

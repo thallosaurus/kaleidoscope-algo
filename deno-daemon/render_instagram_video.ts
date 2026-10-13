@@ -7,11 +7,11 @@ const project: BlenderRenderProject = {
   job: randomKaleidoscope({
     end: 300,
     start: 1,
-    type: "animated"
+    type: "animated",
+    cleanup: true
   }),
   outputPath: "./output",
   type: "blender",
-  cleanup: true
 }
 
 const tags = [

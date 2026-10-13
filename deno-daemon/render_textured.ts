@@ -5,7 +5,8 @@ import { randomKaleidoscope } from "./src/renderer/random.ts";
 const job = randomKaleidoscope({
     type: "animated",
     "start": 1,
-    "end": 100
+    "end": 100,
+    cleanup: true
   });
 
   job.texture = {
@@ -17,7 +18,6 @@ const project: BlenderRenderProject = {
   job: job,
   outputPath: "./output",
   type: "blender",
-  cleanup: true
 }
 
 const output = await renderBlenderProject(project);
