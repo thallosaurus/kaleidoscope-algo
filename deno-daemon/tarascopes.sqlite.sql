@@ -3,14 +3,14 @@
 
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE tarascope (
+CREATE TABLE IF NOT EXISTS tarascope (
     id TEXT NOT NULL PRIMARY KEY,
     parameters TEXT NOT NULL CHECK (json_valid(parameters)),
     "timestamp" TEXT DEFAULT CURRENT_TIMESTAMP,
     status INTEGER DEFAULT 0
 );
 
-CREATE TABLE frames (
+CREATE TABLE IF NOT EXISTS frames (
     kaleidoid TEXT NOT NULL,
     frame_count INTEGER NOT NULL,
     -- PostgreSQL's owned sequence is represented by SQLite rowid autoincrement.
@@ -21,7 +21,7 @@ CREATE TABLE frames (
         REFERENCES tarascope(id) ON DELETE CASCADE
 );
 
-CREATE VIEW showcase AS
+CREATE VIEW IF NOT EXISTS showcase AS
 SELECT
     id || '/video.mp4' AS video,
     id || '/video.gif' AS gif,
@@ -35,7 +35,7 @@ WHERE status = 3;
 -- The original dump first created null-only placeholder versions of these
 -- views, then replaced them with these definitions. Only the final versions
 -- are included here.
-CREATE VIEW newview AS
+CREATE VIEW IF NOT EXISTS newview AS
 SELECT
     t.id,
     count(*) AS count,
@@ -45,7 +45,7 @@ JOIN frames AS f ON f.kaleidoid = t.id
 WHERE t.status <> 3
 GROUP BY t.id;
 
-CREATE VIEW progress AS
+CREATE VIEW IF NOT EXISTS progress AS
 SELECT
     t.id,
     count(*) AS count,

@@ -1,47 +1,82 @@
+import sql from "../../tarascopes.sqlite.sql" with { type: "text" }
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-
 import { Kaleidoscope } from "../renderer/arguments.ts";
-import * as z from "zod";
-
-const app = new Hono();
-
 import { DatabaseSync } from "node:sqlite";
-const db = new DatabaseSync("tarascopes.test.db");
+import { contextStorage, getContext } from "hono/context-storage"
+import { BlenderRenderProject } from "../renderer/executor.ts";
+import { randomKaleidoscope } from "../renderer/random.ts";
 
-db.prepare(`INSERT INTO people (name, age) VALUES (?, ?);`).run("Bob", 40);
-const rows = db.prepare("SELECT id, name, age FROM people").all();
-
-console.log("People:");
-for (const row of rows) {
-  console.log(row);
+type Env = {
+  Variables: {
+    database: DatabaseSync,
+    worker: Worker
+  }
 }
-db.close();
 
-const schema = z.object({
-  name: z.string(),
-  age: z.number(),
-});
+const CreateRouter = new Hono<Env>();
+CreateRouter.post("/random", (c) => {
+  const database = c.get("database");
+  const worker = c.get("worker");
+  const project = randomKaleidoscope({
+    end: 300,
+    start: 1,
+    type: "animated",
+    cleanup: true
+  });
 
-app.post("/create", zValidator("json", Kaleidoscope), (c) => {
-    const data = c.req.valid("json");
-    console.log(data);
-    c.status(200);
+  database.prepare("INSERT INTO tarascope (id, parameters) VALUES (?, ?)")
+    .run(project.id, JSON.stringify(project));
+  worker.postMessage(project);
 
-    return c.text("ok")
+  c.status(200);
+
+  return c.json({
+    id: project.id
+  })
 })
 
-app.post(
-  "/lol",
-    zValidator("json", schema),
-  (c) => {
-    const data = c.req.valid("json");
-    // ... do something
-    return c.json({
-      success: true,
-      message: `${data.name} is ${data.age}`,
-    });
-  },
-);
+CreateRouter.post("/", zValidator("json", Kaleidoscope), (c) => {
+  const data = c.req.valid("json");
+  const database = c.get("database");
+  const worker = c.get("worker");
 
-Deno.serve(app.fetch);
+  database.prepare("INSERT INTO tarascope (id, parameters) VALUES (?, ?)")
+    .run(data.id, JSON.stringify(data));
+
+  worker.postMessage(data);
+
+  c.status(200);
+  return c.json({ id: data.id })
+})
+
+export class HttpApi {
+  controller = new AbortController();
+  app = new Hono<Env>()
+  db = new DatabaseSync("./database.db");
+  worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+
+  constructor() {
+    this.db.exec(sql);
+    this.controller.signal.addEventListener("abort", () => this.db.close());
+
+    this.worker.addEventListener("message", (e) => {
+      this.db.prepare("INSERT INTO frames (kaleidoid, frame_count) VALUES (?, ?)").run(e.data.id, e.data.frame)
+    })
+
+    this.app.use(contextStorage());
+    this.app.use(async (c, next) => {
+      c.set("database", this.db);
+      c.set("worker", this.worker);
+
+      await next();
+    })
+    this.app.route("/create", CreateRouter);
+
+    Deno.serve({ handler: this.app.fetch, signal: this.controller.signal });
+  }
+
+  stop() {
+    this.controller.abort();
+  }
+}

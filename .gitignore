@@ -7,3 +7,4 @@ __pycache__/
 *.blend1
 dist/
 renew.sh
+database.db

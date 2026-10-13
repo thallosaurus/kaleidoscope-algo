@@ -89,7 +89,5 @@ export function randomKaleidoscope(default_frames: TFrames, resolution: TResolut
     //frame: integerBetween(1, 100),
   });
 
-  console.log(k);
-
   return k;
 }
