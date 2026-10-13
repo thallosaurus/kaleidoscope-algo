@@ -17,7 +17,6 @@ if (!id) {
         job,
         outputPath: "./output",
         type: "blender",
-        cleanup: true
     }
 
     console.log("upload to instagram")

@@ -1,12 +1,13 @@
 import * as z from "zod";
 
-const { string, uuidv4, literal, discriminatedUnion, object, float32, int } = z;
+const { boolean, string, uuidv4, literal, discriminatedUnion, object, float32, int } = z;
 
 export const Frames = discriminatedUnion("type", [
     object({
         type: literal("animated"),
         start: int().gt(0),
-        end: int().gt(0)
+        end: int().gt(0),
+        cleanup: boolean().default(true)
     }),
     object({
         type: literal("still"),

@@ -244,7 +244,7 @@ export type BlenderRenderProject = {
     type: "blender",
     job: TKaleidoscope,
     outputPath: string,
-    cleanup: boolean,
+    //cleanup: boolean,
     onUpdate?: RenderStatusCallback
 };
 
@@ -254,7 +254,7 @@ type KaleidoStill = {
     id: string
 }
 
-export async function renderBlenderProject({ type, job, outputPath, cleanup, onUpdate }: BlenderRenderProject): Promise<KaleidoVideo | KaleidoStill> {
+export async function renderBlenderProject({ type, job, outputPath, onUpdate }: BlenderRenderProject): Promise<KaleidoVideo | KaleidoStill> {
     const dirs = new RenderJobDirectory(job.id, outputPath)
     await dirs.createProjectFolder()
 
@@ -271,8 +271,8 @@ export async function renderBlenderProject({ type, job, outputPath, cleanup, onU
     if (job.frames.type == "animated") {
         if (j.success) {
             const v = await stitchVideo(dirs)
-            if (cleanup) {
-                await cleanup_frames({ type, job, outputPath, cleanup, onUpdate });
+            if (job.frames.cleanup) {
+                await cleanup_frames({ type, job, outputPath, onUpdate });
             }
             return v;
         } else {
