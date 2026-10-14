@@ -3,7 +3,8 @@
     "dev": "deno run --watch --allow-net main.ts",
     "still": "deno run -A --env-file render_stills.ts",
     "wallpaper": "deno run -A --env-file render_wallpaper.ts",
-    "instagram": "deno run -A --env-file render_instagram_video.ts"
+    "instagram": "deno run -A --env-file render_instagram_video.ts",
+    "queue_random": "curl -X POST http://localhost:8000/create/random"
   },
   "imports": {
     "@hono/standard-validator": "npm:@hono/standard-validator@^0.4.0",
