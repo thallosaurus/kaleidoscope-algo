@@ -1,4 +1,3 @@
-import { ParseStatus } from "zod/v3";
 import { BlenderRenderProject, renderBlenderProject } from "../renderer/executor.ts";
 
 /** FIFO queue that waits for new values when empty. */
@@ -43,7 +42,7 @@ export class AsyncQueue {
 }
 
 const queue = new AsyncQueue();
-onmessage = (e) => {
+self.onmessage = (e) => {
     console.log(e);
     queue.push({
         type: "blender",

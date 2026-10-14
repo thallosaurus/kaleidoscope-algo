@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { Kaleidoscope } from "../renderer/arguments.ts";
 import { DatabaseSync } from "node:sqlite";
-import { contextStorage, getContext } from "hono/context-storage"
+import { contextStorage } from "hono/context-storage"
 import { randomKaleidoscope } from "../renderer/random.ts";
 
 type Env = {
@@ -69,6 +69,7 @@ export class HttpApi {
 
           case "finish":
             console.log(e.data);
+            this.db.prepare("UPDATE tarascope SET status = ? WHERE tarascope.id = ?").run(3, e.data.id);
             break;
         }
       }
