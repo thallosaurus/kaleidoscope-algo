@@ -1,3 +1,5 @@
+/// <reference no-default-lib="true" />
+/// <reference lib="deno.worker" />
 import { BlenderRenderProject, renderBlenderProject } from "../renderer/executor.ts";
 
 /** FIFO queue that waits for new values when empty. */

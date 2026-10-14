@@ -6,6 +6,13 @@ import { DatabaseSync } from "node:sqlite";
 import { contextStorage } from "hono/context-storage"
 import { randomKaleidoscope } from "../renderer/random.ts";
 
+enum DbStatus {
+  Queued = 0,
+  Rendering = 1,
+  Error = 2,
+  Finished = 3,
+}
+
 type Env = {
   Variables: {
     database: DatabaseSync,
