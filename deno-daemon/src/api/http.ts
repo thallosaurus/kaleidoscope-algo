@@ -1,27 +1,21 @@
-import sql from "../../tarascopes.sqlite.sql" with { type: "text" }
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { Kaleidoscope } from "../renderer/arguments.ts";
-import { DatabaseSync } from "node:sqlite";
+
 import { contextStorage } from "hono/context-storage"
 import { randomKaleidoscope } from "../renderer/random.ts";
-
-enum DbStatus {
-  Queued = 0,
-  Rendering = 1,
-  Error = 2,
-  Finished = 3,
-}
+import { DatabaseHandler } from "./database.ts";
+import { createInstagramClient } from "./instagram.ts";
 
 type Env = {
   Variables: {
-    database: DatabaseSync,
+    database: DatabaseHandler,
     worker: Worker
   }
 }
 
-const CreateRouter = new Hono<Env>();
-CreateRouter.post("/random", (c) => {
+const VideoRouter = new Hono<Env>();
+VideoRouter.post("/random", (c) => {
   const database = c.get("database");
   const worker = c.get("worker");
   const project = randomKaleidoscope({
@@ -31,8 +25,7 @@ CreateRouter.post("/random", (c) => {
     cleanup: true
   });
 
-  database.prepare("INSERT INTO tarascope (id, parameters) VALUES (?, ?)")
-    .run(project.id, JSON.stringify(project));
+  database.insertJob(project);
   worker.postMessage(project);
 
   c.status(200);
@@ -42,13 +35,14 @@ CreateRouter.post("/random", (c) => {
   })
 })
 
-CreateRouter.post("/", zValidator("json", Kaleidoscope), (c) => {
+VideoRouter.post("/", zValidator("json", Kaleidoscope), (c) => {
   const data = c.req.valid("json");
   const database = c.get("database");
   const worker = c.get("worker");
 
-  database.prepare("INSERT INTO tarascope (id, parameters) VALUES (?, ?)")
-    .run(data.id, JSON.stringify(data));
+  /*  database.prepare("INSERT INTO tarascope (id, parameters) VALUES (?, ?)")
+      .run(data.id, JSON.stringify(data));*/
+  database.insertJob(data);
 
   worker.postMessage(data);
 
@@ -56,14 +50,21 @@ CreateRouter.post("/", zValidator("json", Kaleidoscope), (c) => {
   return c.json({ id: data.id })
 })
 
+const accessToken = Deno.env.get("ACCESS_TOKEN") ?? "";
+const instagramUserId = Deno.env.get("INSTAGRAM_USER_ID") ?? "";
+
 export class HttpApi {
   controller = new AbortController();
   app = new Hono<Env>()
-  db = new DatabaseSync("./database.db");
+  db = new DatabaseHandler();
   worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
+  instagram = createInstagramClient({
+    apiVersion: "v24.0",
+    accessToken,
+    instagramUserId
+  })
 
   constructor() {
-    this.db.exec(sql);
     this.controller.signal.addEventListener("abort", () => this.db.close());
 
     this.worker.addEventListener("message", (e) => {
@@ -71,12 +72,15 @@ export class HttpApi {
 
         switch (e.data.type) {
           case "status":
-            this.db.prepare("INSERT INTO frames (kaleidoid, frame_count) VALUES (?, ?)").run(e.data.id, e.data.frame)
+            console.log(e.data)
+            //this.db.prepare("INSERT INTO frames (kaleidoid, frame_count) VALUES (?, ?)").run(e.data.id, e.data.frame)
+            this.db.insertFrame(e.data);
             break;
 
           case "finish":
             console.log(e.data);
-            this.db.prepare("UPDATE tarascope SET status = ? WHERE tarascope.id = ?").run(3, e.data.id);
+            //this.db.prepare("UPDATE tarascope SET status = ? WHERE tarascope.id = ?").run(DbStatus.Finished, e.data.id);
+            this.db.finishArtifact(e.data);
             break;
         }
       }
@@ -89,7 +93,7 @@ export class HttpApi {
 
       await next();
     })
-    this.app.route("/create", CreateRouter);
+    this.app.route("/video", VideoRouter);
 
     Deno.serve({ handler: this.app.fetch, signal: this.controller.signal });
   }

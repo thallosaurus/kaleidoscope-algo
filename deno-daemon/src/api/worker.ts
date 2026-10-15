@@ -12,6 +12,7 @@ export class AsyncQueue {
         const next = this.#waiting.shift();
         if (next) next(value);
         else this.#items.push(value);
+        console.log(this.#items)
     }
 
     /** Take the next message, waiting until one is pushed if the queue is empty. */
@@ -30,6 +31,7 @@ export class AsyncQueue {
             const value = await this.take();
             try {
                 //await handle(value);
+                console.log("new job", value)
                 const output = await renderBlenderProject(value);
                 console.log(output)
                 postMessage({
@@ -45,7 +47,7 @@ export class AsyncQueue {
 
 const queue = new AsyncQueue();
 self.onmessage = (e) => {
-    console.log(e);
+    //console.log(e);
     queue.push({
         type: "blender",
         outputPath: "./output",
