@@ -87,6 +87,11 @@ VideoRouter.post("/", zValidator("json", Kaleidoscope), async (c, next) => {
   return c.json({ id: data.id })
 })
 
+VideoRouter.get("/", (c) => {
+  const database = c.get("database");
+  return c.json(database.getJobs())
+})
+
 const accessToken = Deno.env.get("ACCESS_TOKEN") ?? "";
 const instagramUserId = Deno.env.get("INSTAGRAM_USER_ID") ?? "";
 

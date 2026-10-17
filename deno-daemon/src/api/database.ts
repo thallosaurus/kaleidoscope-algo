@@ -20,6 +20,11 @@ export class DatabaseHandler {
         this.#db.close();
     }
 
+    getJobs() {
+        return this.#db.prepare("SELECT id, parameters, status FROM tarascope")
+            .all();
+    }
+
     insertJob(job: TKaleidoscope) {
         this.#db.prepare("INSERT INTO tarascope (id, parameters) VALUES (?, ?)")
             .run(job.id, JSON.stringify(job));
