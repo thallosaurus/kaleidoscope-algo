@@ -5,7 +5,12 @@ export async function scpFileToDestionation(r: {
     remote_path: string
 }) {
     const command = new Deno.Command("scp", {
-        args: [r.local_path, `${r.user}@${r.host}:${r.remote_path}`],
+        args: [
+            "-i",
+            "~/.ssh/id_ed25519",
+            r.local_path,
+            `${r.user}@${r.host}:${r.remote_path}`
+        ],
         stdout: "piped",
         stderr: "piped",
     });

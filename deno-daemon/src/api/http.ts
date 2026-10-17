@@ -186,7 +186,7 @@ export class HttpApi {
 
             this.hooks.notify({
               id: e.data.id,
-              url
+              url: url.toString()
             });
           })
           break;

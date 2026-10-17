@@ -26,19 +26,19 @@ export class WebhookHandler {
 
     notify(msg: {
         id: string,
-        url: URL
+        url: string
     }) {
         this.#db.getHooksForId(msg.id)
             .forEach(async (e) => {
-                console.log(e);
-                const url = e.hook_url!;
-                await fetch(url.toString(), {
+                console.log(e, msg);
+                const hook_url = e.hook_url!;
+                await fetch(hook_url.toString(), {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        url
+                        url: msg.url
                     })
                 })
             })
