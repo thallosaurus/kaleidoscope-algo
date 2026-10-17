@@ -152,9 +152,13 @@ type InstagramPost = {
 }
 
 export async function postInstagram(project: TInstagramRequest, post: InstagramPost) {
-  const base = "lenna.duckdns.org";
   //const videoUrl = new URL(`https://${base}/${project.job.id}/video.hdr.mp4`);
-  console.log("posting", project.hdr);
+  const h = await fetch(project.url, {
+    method: "HEAD"
+  })
+
+  if (!h.ok) { throw new Error(`${project.url} is not public`) }
+  console.log("posting", project.url);
 
   const accessToken = Deno.env.get("ACCESS_TOKEN") ?? "";
   const instagramUserId = Deno.env.get("INSTAGRAM_USER_ID") ?? "";
@@ -167,7 +171,7 @@ export async function postInstagram(project: TInstagramRequest, post: InstagramP
 
   await client.publishReel({
     shareToFeed: true,
-    videoUrl: new URL(project.hdr),
+    videoUrl: new URL(project.url),
     ...post,
   })
 }
