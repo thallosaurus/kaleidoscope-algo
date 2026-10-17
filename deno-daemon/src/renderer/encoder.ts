@@ -74,7 +74,7 @@ export type KaleidoVideo = {
     id: string,
     mp4: string,
     hdr: string,
-    gif: string
+    //gif: string
 }
 
 export async function stitchVideo(dirs: RenderJobDirectory): Promise<KaleidoVideo> {
@@ -92,6 +92,6 @@ export async function stitchVideo(dirs: RenderJobDirectory): Promise<KaleidoVide
         type: "video",
         mp4: mp4Task.outputPath,
         hdr: hdrTask.outputPath,
-        gif: gifTask.outputPath
+        //gif: gifTask.outputPath
     }
 }
