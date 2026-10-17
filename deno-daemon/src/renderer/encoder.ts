@@ -78,13 +78,13 @@ export type KaleidoVideo = {
 }
 
 export async function stitchVideo(dirs: RenderJobDirectory): Promise<KaleidoVideo> {
-    const gifTask = stitchGif(dirs)
+    //const gifTask = stitchGif(dirs)
     const mp4Task = stitchMp4(dirs);
     const hdrTask = stitchHdrMp4(dirs);
     console.log("encoding video")
-    
-    await Promise.all([gifTask.cmd.output(), mp4Task.cmd.output(), hdrTask.cmd.output()])
-    
+
+    await Promise.all([/* gifTask.cmd.output(), */mp4Task.cmd.output(), hdrTask.cmd.output()])
+
     console.log("encoding video done")
 
     return {
