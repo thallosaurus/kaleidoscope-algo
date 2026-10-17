@@ -33,10 +33,9 @@ export class AsyncQueue {
                 //await handle(value);
                 console.log("new job", value)
                 const output = await renderBlenderProject(value);
-                console.log(output)
                 postMessage({
+                    ...output,
                     type: "finish",
-                    output,
                 })
             } catch (error) {
                 onError(error, value);

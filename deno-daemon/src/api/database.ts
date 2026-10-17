@@ -25,6 +25,21 @@ export class DatabaseHandler {
             .all();
     }
 
+    insertHooks(id: string, hook_url: string) {
+        this.#db.prepare("INSERT INTO hooks (id, hook_url) VALUES(?, ?)")
+            .run(id, hook_url)
+    }
+
+    getHooks() {
+        return this.#db.prepare("SELECT id, hook_url FROM hooks")
+            .all();
+    }
+
+    getHooksForId(id: string) {
+        return this.#db.prepare("SELECT id, hook_url FROM hooks WHERE id = ?")
+            .all(id);
+    }
+
     insertJob(job: TKaleidoscope) {
         this.#db.prepare("INSERT INTO tarascope (id, parameters) VALUES (?, ?)")
             .run(job.id, JSON.stringify(job));

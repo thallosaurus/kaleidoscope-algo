@@ -21,6 +21,13 @@ CREATE TABLE IF NOT EXISTS frames (
         REFERENCES tarascope(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS "hooks" (
+	"id"	TEXT NOT NULL,
+	"hook_url"	TEXT NOT NULL,
+	PRIMARY KEY("id"),
+	FOREIGN KEY("id") REFERENCES "tarascope"("id")
+);
+
 CREATE VIEW IF NOT EXISTS showcase AS
 SELECT
     id || '/video.mp4' AS video,

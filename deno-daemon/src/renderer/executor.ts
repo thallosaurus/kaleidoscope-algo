@@ -183,6 +183,7 @@ async function renderJob(job: TKaleidoscope, dirs: RenderJobDirectory, onUpdate:
     } finally {
         stdoutFile.close();
         stderrFile.close();
+        await Deno.remove(dirs.socket);
     }
 }
 

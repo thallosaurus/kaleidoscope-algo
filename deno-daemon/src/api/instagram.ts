@@ -6,6 +6,7 @@
  */
 
 import { BlenderRenderProject } from "../renderer/executor.ts";
+import { TInstagramRequest } from "./http.ts";
 
 export type InstagramConfig = {
   /** Graph API version, for example `vXX.0`. Keep this explicit so it can be
@@ -150,10 +151,10 @@ type InstagramPost = {
   caption: string
 }
 
-export async function postInstagram(project: BlenderRenderProject, post: InstagramPost) {
+export async function postInstagram(project: TInstagramRequest, post: InstagramPost) {
   const base = "lenna.duckdns.org";
-  const videoUrl = new URL(`https://${base}/${project.job.id}/video.hdr.mp4`);
-  console.log("posting", videoUrl);
+  //const videoUrl = new URL(`https://${base}/${project.job.id}/video.hdr.mp4`);
+  console.log("posting", project.hdr);
 
   const accessToken = Deno.env.get("ACCESS_TOKEN") ?? "";
   const instagramUserId = Deno.env.get("INSTAGRAM_USER_ID") ?? "";
@@ -166,7 +167,7 @@ export async function postInstagram(project: BlenderRenderProject, post: Instagr
 
   await client.publishReel({
     shareToFeed: true,
-    videoUrl,
+    videoUrl: new URL(project.hdr),
     ...post,
   })
 }
