@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "server": "deno run -A main.ts",
+    "server": "deno run -A --env-file main.ts",
     "still": "deno run -A --env-file render_stills.ts",
     "wallpaper": "deno run -A --env-file render_wallpaper.ts",
     "instagram": "deno run -A --env-file render_instagram_video.ts",
