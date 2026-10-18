@@ -1,4 +1,6 @@
-const TOKEN = Deno.env.get("DISCORD_TOKEN") ?? "";
+import { getBaoTokens } from "./bao.ts";
+
+const TOKEN = await getBaoTokens("discordToken", "/v1/kv/data/tarascope")
 const SERVER_ID = 1542169370896371855;
 
 async function botSeesChannel(): Promise<void> {

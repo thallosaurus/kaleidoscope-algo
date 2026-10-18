@@ -6,6 +6,7 @@
  */
 
 import { BlenderRenderProject } from "../renderer/executor.ts";
+import { getBaoTokens } from "./bao.ts";
 import { TInstagramRequest } from "./http.ts";
 
 export type InstagramConfig = {
@@ -160,9 +161,11 @@ export async function postInstagram(project: TInstagramRequest, post: InstagramP
   if (!h.ok) { throw new Error(`${project.url} is not public`) }
   console.log("posting", project.url);
 
-  const accessToken = Deno.env.get("ACCESS_TOKEN") ?? "";
-  const instagramUserId = Deno.env.get("INSTAGRAM_USER_ID") ?? "";
-
+  //const accessToken = Deno.env.get("ACCESS_TOKEN") ?? "";
+  const accessToken = await getBaoTokens("instagramAccessToken", "/v1/kv/data/tarascope")
+  //const instagramUserId = Deno.env.get("INSTAGRAM_USER_ID") ?? "";
+  const instagramUserId = await getBaoTokens("instagramUserId", "/v1/kv/data/tarascope")
+  
   const client = createInstagramClient({
     apiVersion: "v24.0",
     accessToken,

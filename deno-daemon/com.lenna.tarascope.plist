@@ -1,0 +1,42 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+   <plist version="1.0">
+   <dict>
+       <key>Label</key>
+       <string>com.lenna.start-llama</string>
+       <key>ProgramArguments</key>
+       <array>
+	   <string>/opt/homebrew/bin/deno</string>
+           <string>run</string>
+           <string>-A</string>
+           <string>--env-file=</string>
+           <string>my-model</string>
+           <string>--host</string>
+	   <string>0.0.0.0</string>
+           <string>--port</string>
+           <string>8080</string>
+           <string>-c</string>
+	   <string>8192</string>
+           <string>--api-key</string>
+           <string>masterapikey123</string>
+           <string>--reasoning-budget</string>
+           <string>0</string>
+           <string>--reasoning</string>
+           <string>on</string>
+           <string>-fa</string>
+           <string>off</string>
+	   <string>-t</string>
+	   <string>8</string>
+	   <string>--tools</string>
+	   <string>all</string>
+       </array>
+       <key>KeepAlive</key>
+       <true />
+       <key>RunAtLoad</key>
+       <true/>
+       <key>StandardOutPath</key>
+       <string>/tmp/helloscript.out</string>
+       <key>StandardErrorPath</key>
+       <string>/tmp/helloscript.err</string>
+   </dict>
+   </plist>
