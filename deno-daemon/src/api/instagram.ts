@@ -5,9 +5,10 @@
  * not enough); the account must be an eligible professional account.
  */
 
-import { BlenderRenderProject } from "../renderer/executor.ts";
+
 import { getBaoTokens } from "./bao.ts";
-import { TInstagramRequest } from "./http.ts";
+import { TInstagramRequest } from "./http/post.ts";
+//import { TInstagramRequest } from "./http.ts";
 
 export type InstagramConfig = {
   /** Graph API version, for example `vXX.0`. Keep this explicit so it can be
@@ -162,9 +163,9 @@ export async function postInstagram(project: TInstagramRequest, post: InstagramP
   console.log("posting", project.url);
 
   //const accessToken = Deno.env.get("ACCESS_TOKEN") ?? "";
-  const accessToken = await getBaoTokens("instagramAccessToken", "/v1/kv/data/tarascope")
+  const accessToken = await getBaoTokens("instagramAccessToken", "/kv/data/tarascope")
   //const instagramUserId = Deno.env.get("INSTAGRAM_USER_ID") ?? "";
-  const instagramUserId = await getBaoTokens("instagramUserId", "/v1/kv/data/tarascope")
+  const instagramUserId = await getBaoTokens("instagramUserId", "/kv/data/tarascope")
   
   const client = createInstagramClient({
     apiVersion: "v24.0",

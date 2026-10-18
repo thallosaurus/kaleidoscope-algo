@@ -1,6 +1,6 @@
 export const getBaoTokens = async (key_name: string, path: string) => {
     const baoAddress = Deno.env.get("BAO_ADDRESS") ?? "";
-    const req = await fetch(baoAddress + path, {
+    const req = await fetch(baoAddress + "/v1" + path, {
         headers: {
             "X-Vault-Token": Deno.env.get("BAO_TOKEN") ?? ""
         }

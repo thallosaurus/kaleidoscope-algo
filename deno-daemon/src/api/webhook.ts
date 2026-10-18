@@ -38,7 +38,8 @@ export class WebhookHandler {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        url: msg.url
+                        url: msg.url,
+                        id: msg.id
                     })
                 })
             })

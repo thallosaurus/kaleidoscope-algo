@@ -7,12 +7,14 @@ enum DbStatus {
     Rendering = 1,
     Error = 2,
     Finished = 3,
+    Posted = 4,
+    PostFailed = 5
 }
 
 export class DatabaseHandler {
     #db: DatabaseSync
-    constructor(db = new DatabaseSync("./database.db")) {
-        this.#db = db;
+    constructor(path = "./database.db") {
+        this.#db = new DatabaseSync(path);
         this.#db.exec(sql);
     }
 
@@ -50,8 +52,17 @@ export class DatabaseHandler {
             .run(frame.id, frame.frame)
     }
 
-    finishArtifact(frame: { id: string }) {
+    private setStatus(status: DbStatus, frame: { id: string }) {
         this.#db.prepare("UPDATE tarascope SET status = ? WHERE tarascope.id = ?")
-            .run(DbStatus.Finished, frame.id);
+            .run(status, frame.id);
+    }
+    finishArtifact(frame: { id: string }) {
+        this.setStatus(DbStatus.Finished, frame)
+    }
+    setPosted(frame: { id: string }) {
+        this.setStatus(DbStatus.Posted, frame)
+    }
+    setPostFailed(frame: { id: string }) {
+        this.setStatus(DbStatus.PostFailed, frame)
     }
 }

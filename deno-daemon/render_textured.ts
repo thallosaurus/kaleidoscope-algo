@@ -1,4 +1,3 @@
-import { joinGlobs } from "jsr:@std/path@^1.1.4/join-globs";
 import { BlenderRenderProject, renderBlenderProject } from "./src/renderer/executor.ts";
 import { randomKaleidoscope } from "./src/renderer/random.ts";
 
