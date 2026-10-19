@@ -17,6 +17,6 @@
        <key>StandardErrorPath</key>
        <string>/tmp/tarascope-server.err</string>
        <key>WorkingDirectory</key>
-       <string>/root/tarascope</string>
+       <string>/var/root/tarascope</string>
    </dict>
    </plist>
