@@ -44,13 +44,13 @@ ImageRouter.post("/", zValidator("json", Kaleidoscope), async (c, next) => {
   database.insertJob(data);
   worker.postMessage(data);
 
-  const hook_url = c.req.raw.headers.get("X-Callback-URL")
+  const webhook = c.req.raw.headers.get("X-Callback-URL")
 
-  if (hook_url) {
+  if (webhook) {
     const hooks = c.get("hooks");
     hooks.register({
       id: data.id,
-      webhook: hook_url
+      webhook
     });
   }
 

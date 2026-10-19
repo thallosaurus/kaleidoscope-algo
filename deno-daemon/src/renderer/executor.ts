@@ -8,8 +8,16 @@ import { expandGlob } from "jsr:@std/fs/expand-glob";
 //import kaleido_bytes from "../kaleido.blend" with { type: "bytes" };
 
 const BLENDER_PATH_MAC = "/Applications/Blender.app/Contents/MacOS/Blender";
-const loader_bytes = await Deno.readFile(new URL("../../loader.py", import.meta.url));
-const kaleido_bytes = await Deno.readFile(new URL("../../kaleido_hdr.blend", import.meta.url));
+let loader_bytes = await Deno.readFile(new URL("../../loader.py", import.meta.url));
+let kaleido_bytes = await Deno.readFile(new URL("../../kaleido_hdr.blend", import.meta.url));
+
+export function setLoaderBytes(b: Uint8Array<ArrayBuffer>) {
+    loader_bytes = b
+}
+
+export function setKaleidoBytes(b: Uint8Array<ArrayBuffer>) {
+    kaleido_bytes = b
+}
 
 export class RenderJobDirectory {
     #directory: string
@@ -246,7 +254,9 @@ export type BlenderRenderProject = {
     job: TKaleidoscope,
     outputPath: string,
     //cleanup: boolean,
-    onUpdate?: RenderStatusCallback
+    onUpdate?: RenderStatusCallback,
+    //kaleidoscope_project: Uint8Array<ArrayBuffer>
+    //loader: Uint8Array<ArrayBuffer>
 };
 
 type KaleidoStill = {
@@ -255,15 +265,22 @@ type KaleidoStill = {
     id: string
 }
 
-export async function renderBlenderProject({ type, job, outputPath, onUpdate }: BlenderRenderProject): Promise<KaleidoVideo | KaleidoStill> {
+export async function renderBlenderProject({
+    type,
+    job,
+    outputPath,
+    onUpdate,
+}: BlenderRenderProject,
+    kaleidoscope_project = kaleido_bytes,
+    loader = loader_bytes): Promise<KaleidoVideo | KaleidoStill> {
     const dirs = new RenderJobDirectory(job.id, outputPath)
     await dirs.createProjectFolder()
 
     //project file
-    await Deno.writeFile(dirs.blenderProjectPath, kaleido_bytes)
+    await Deno.writeFile(dirs.blenderProjectPath, kaleidoscope_project)
 
     //loader file
-    await Deno.writeFile(dirs.loaderPath, loader_bytes)
+    await Deno.writeFile(dirs.loaderPath, loader)
 
     //write parameters
     const paramsJson = JSON.stringify(job);
@@ -273,7 +290,7 @@ export async function renderBlenderProject({ type, job, outputPath, onUpdate }: 
         if (j.success) {
             const v = await stitchVideo(dirs)
             if (job.frames.cleanup) {
-                await cleanup_frames({ type, job, outputPath, onUpdate });
+                await cleanup_frames({ job, outputPath });
             }
             return v;
         } else {
@@ -290,18 +307,25 @@ export async function renderBlenderProject({ type, job, outputPath, onUpdate }: 
 }
 
 async function deleteFiles(directory: string, pattern: string) {
-  for await (const entry of expandGlob(pattern, {
-    root: directory,
-    includeDirs: false,
-  })) {
-    if (entry.isFile) {
-      console.log(`Deleting ${entry.path}`);
-      await Deno.remove(entry.path);
+    for await (const entry of expandGlob(pattern, {
+        root: directory,
+        includeDirs: false,
+    })) {
+        if (entry.isFile) {
+            console.log(`Deleting ${entry.path}`);
+            await Deno.remove(entry.path);
+        }
     }
-  }
 }
 
-export async function cleanup_frames({ job, outputPath }: BlenderRenderProject) {
+type CleanupRequst = {
+    job: {
+        id: string,
+    },
+    outputPath: string
+};
+
+export async function cleanup_frames({ job, outputPath }: CleanupRequst) {
     const dirs = new RenderJobDirectory(job.id, outputPath)
     await Deno.rename(dirs.projectFolderPath + "/frame_00000.png", dirs.projectFolderPath + "/thumbnail.png")
     await deleteFiles(dirs.projectFolderPath, "frame_*.png")
