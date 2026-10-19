@@ -10,6 +10,21 @@ import { getBaoTokens } from "./bao.ts";
 import { TInstagramRequest } from "./http/post.ts";
 //import { TInstagramRequest } from "./http.ts";
 
+export type InstagramClient = {
+  createReelContainer(options: ReelOptions): Promise<MediaContainer>,
+  /** Read processing state for a container. */
+  getContainerStatus(containerId: string): Promise<ContainerStatus>,
+
+  /** Wait until Instagram has finished processing or reports a terminal error. */
+  waitForContainer(containerId: string, options?: WaitOptions): Promise<ContainerStatus>,
+
+  /** Publish a finished Reel container. */
+  publishContainer(container: MediaContainer): Promise<PublishedMedia>,
+
+  /** Full workflow. Calling this is the point at which API requests are made. */
+  publishReel(options: ReelOptions, waitOptions?: WaitOptions): Promise<PublishedMedia>,
+}
+
 export type InstagramConfig = {
   /** Graph API version, for example `vXX.0`. Keep this explicit so it can be
    * upgraded deliberately when Meta retires an API version. */
@@ -44,7 +59,7 @@ type GraphError = {
 };
 
 /** Create an API client. Constructing it does not make a network request. */
-export function createInstagramClient(config: InstagramConfig) {
+export function createInstagramClient(config: InstagramConfig): InstagramClient {
   if (!/^v\d+\.\d+$/.test(config.apiVersion)) {
     throw new Error(`Invalid Graph API version: ${config.apiVersion}`);
   }
@@ -153,7 +168,7 @@ type InstagramPost = {
   caption: string
 }
 
-export async function postInstagram(project: TInstagramRequest, post: InstagramPost) {
+export async function postInstagram(project: TInstagramRequest, post: InstagramPost, client: InstagramClient) {
   //const videoUrl = new URL(`https://${base}/${project.job.id}/video.hdr.mp4`);
   const h = await fetch(project.url, {
     method: "HEAD"
@@ -163,15 +178,9 @@ export async function postInstagram(project: TInstagramRequest, post: InstagramP
   console.log("posting", project.url);
 
   //const accessToken = Deno.env.get("ACCESS_TOKEN") ?? "";
-  const accessToken = await getBaoTokens("instagramAccessToken", "/kv/data/tarascope")
+  //const accessToken = await getBaoTokens("instagramAccessToken", "/kv/data/tarascope")
   //const instagramUserId = Deno.env.get("INSTAGRAM_USER_ID") ?? "";
-  const instagramUserId = await getBaoTokens("instagramUserId", "/kv/data/tarascope")
-  
-  const client = createInstagramClient({
-    apiVersion: "v24.0",
-    accessToken,
-    instagramUserId
-  })
+  //const instagramUserId = await getBaoTokens("instagramUserId", "/kv/data/tarascope")
 
   await client.publishReel({
     shareToFeed: true,

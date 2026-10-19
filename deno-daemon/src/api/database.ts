@@ -27,6 +27,16 @@ export class DatabaseHandler {
             .all();
     }
 
+    getJobsForId(id: string) {
+        const data = this.#db.prepare("SELECT id, status FROM tarascope WHERE id = ?")
+        .get(id)!;
+
+        return {
+            id: data["id"]?.toString(),
+            status: data["status"]?.toString()
+        }
+    }
+
     insertHooks(id: string, hook_url: string) {
         this.#db.prepare("INSERT INTO hooks (id, hook_url) VALUES(?, ?)")
             .run(id, hook_url)

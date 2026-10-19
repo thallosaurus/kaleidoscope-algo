@@ -3,8 +3,10 @@ import { contextStorage } from "hono/context-storage"
 import { DatabaseHandler } from "./database.ts";
 import { WebhookHandler } from "./webhook.ts";
 import { scpFileToDestionation } from "./publisher.ts";
-import { InstagramRouter } from "./http/post.ts";
+import { InstagramRouter, PostEnv } from "./http/post.ts";
 import { VideoRouter, ImageRouter } from "./http/generate.ts";
+import { getBaoTokens } from "./bao.ts";
+import { createInstagramClient } from "./instagram.ts";
 
 export type Env = {
   Variables: {
@@ -15,7 +17,7 @@ export type Env = {
 }
 
 export class HttpApi {
-  hostName = Deno.env.get("HOSTNAME") ?? "http://localhost:8000/"
+  hostName = Deno.env.get("HOSTNAME") ?? "http://localhost:8080/"
   controller = new AbortController();
   app = new Hono<Env>()
   db = new DatabaseHandler();
@@ -65,7 +67,22 @@ export class HttpApi {
     })
     this.app.route("/video", VideoRouter);
     this.app.route("/image", ImageRouter);
-    this.app.route("/post", InstagramRouter);
+    InstagramRouter.use()
+    this.app.use<PostEnv>(async (c, next) => {
+
+      const accessToken = await getBaoTokens("instagramAccessToken", "/kv/data/tarascope")
+      //const instagramUserId = Deno.env.get("INSTAGRAM_USER_ID") ?? "";
+      const instagramUserId = await getBaoTokens("instagramUserId", "/kv/data/tarascope")
+
+      c.set("baseUrl", new URL(`/media/`, this.hostName))
+      c.set("igClient", createInstagramClient({
+        apiVersion: "v24.0",
+        accessToken,
+        instagramUserId
+      }))
+
+      await next();
+    }).route("/post", InstagramRouter);
 
   }
 

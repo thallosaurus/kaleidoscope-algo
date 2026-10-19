@@ -32,16 +32,37 @@ export class WebhookHandler {
             .forEach(async (e) => {
                 console.log(e, msg);
                 const hook_url = e.hook_url!;
-                await fetch(hook_url.toString(), {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        url: msg.url,
-                        id: msg.id
+
+                const abort = new AbortController();
+
+                const timeout = setTimeout(() => {
+                    abort.abort();
+                }, 5000);
+                
+                try {
+
+                    const res = await fetch(hook_url.toString(), {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        signal: abort.signal,
+                        body: JSON.stringify({
+                            url: msg.url,
+                            id: msg.id
+                        })
                     })
-                })
+                    
+                    if (res.ok) {
+                        console.log(`webhook ${hook_url} was successful`)
+                    } else {
+                        console.error(`webhook ${hook_url} returned status:`, res.status, res.statusText)
+                    }
+                } catch (e) {
+                    console.log("webhook error", e)
+                } finally {
+                    clearTimeout(timeout);
+                }
             })
     }
 }
