@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Context, Hono, Next } from "hono";
 import { contextStorage } from "hono/context-storage"
 import { DatabaseHandler } from "./database.ts";
 import { WebhookHandler } from "./webhook.ts";
@@ -13,6 +13,19 @@ export type Env = {
     database: DatabaseHandler,
     worker: Worker
     hooks: WebhookHandler
+  }
+}
+
+async function checkAdmin(c: Context<Env>, next: Next) {
+  const auth = c.req.header("Authorization");
+
+  const rootToken = await getBaoTokens("tarascopeAdminToken", "/kv/data/tarascope");
+
+  if (auth === rootToken) {
+    await next();
+  } else {
+    c.status(403);
+    return new Response();
   }
 }
 
@@ -64,6 +77,11 @@ export class HttpApi {
       c.set("hooks", this.hooks);
 
       await next();
+    })
+    this.app.get("/auth", checkAdmin, async (c) => {
+      console.log("authenticated");
+      c.status(200);
+      return c.text("authenticated!")
     })
     this.app.route("/video", VideoRouter);
     this.app.route("/image", ImageRouter);
